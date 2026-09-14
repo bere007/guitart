@@ -28,7 +28,7 @@ function loadSession(){
       cachedUser = session?.user ?? null;
       cachedProfile = null;
       if(cachedUser){
-        const { data } = await supabase.from('profiles').select('name, is_admin').eq('id', cachedUser.id).single();
+        const { data } = await supabase.from('profiles').select('name, nickname, is_admin').eq('id', cachedUser.id).single();
         cachedProfile = data ?? null;
       }
     })();
@@ -39,6 +39,11 @@ function loadSession(){
 export function currentUser(){ return cachedUser; }
 export function currentProfile(){ return cachedProfile; }
 
+/** What we call the signed-in person everywhere in the UI -- their nickname, with sensible fallbacks. */
+export function displayName(){
+  return cachedProfile?.nickname || cachedProfile?.name?.split(' ')[0] || cachedUser?.email?.split('@')[0] || 'гость';
+}
+
 /** Loads the session without redirecting -- use on auth.html to check "already logged in?". */
 export async function whoAmI(){
   await loadSession();
@@ -48,9 +53,9 @@ export async function whoAmI(){
 /** Forces the next loadSession() to hit the network again instead of the cached result. */
 function invalidateSession(){ sessionReady = null; }
 
-export async function signUp(name, email, password){
+export async function signUp(name, nickname, email, password){
   const { error } = await supabase.auth.signUp({
-    email, password, options: { data: { name } },
+    email, password, options: { data: { name, nickname: nickname || name.split(' ')[0] } },
   });
   if(!error){ invalidateSession(); await loadSession(); }
   return error;
@@ -59,6 +64,33 @@ export async function signUp(name, email, password){
 export async function signIn(email, password){
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if(!error){ invalidateSession(); await loadSession(); }
+  return error;
+}
+
+/** Re-sends the sign-up confirmation email (for "Проверь почту" -> "не пришло письмо"). */
+export async function resendConfirmation(email){
+  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  return error;
+}
+
+/** Sends a password-reset email with a link back to reset-password.html. */
+export async function requestPasswordReset(email){
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${location.origin}${location.pathname.replace(/[^/]+$/, '')}reset-password.html`,
+  });
+  return error;
+}
+
+/** Sets a new password -- only works inside the recovery session created by the reset-password link. */
+export async function updatePassword(newPassword){
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  return error;
+}
+
+/** Lets a signed-in user rename how the site addresses them. */
+export async function updateNickname(nickname){
+  const { error } = await supabase.from('profiles').update({ nickname }).eq('id', cachedUser.id);
+  if(!error && cachedProfile) cachedProfile.nickname = nickname;
   return error;
 }
 
@@ -145,7 +177,7 @@ export async function bookExamSlot(slot){
 /** Admin-only: full roster with progress, gated server-side by the is_admin RLS policies. */
 export async function fetchAdminRoster(){
   const [{ data: profiles }, { data: enrollments }, { data: exams }, { data: reports }] = await Promise.all([
-    supabase.from('profiles').select('id, name, is_admin').order('created_at', { ascending: true }),
+    supabase.from('profiles').select('id, name, nickname, is_admin').order('created_at', { ascending: true }),
     supabase.from('enrollments').select('user_id, paid'),
     supabase.from('exam_bookings').select('user_id, slot, booked_at, passed, passed_at'),
     supabase.from('week_reports').select('user_id, week_number'),
@@ -159,6 +191,7 @@ export async function fetchAdminRoster(){
     .map(p => ({
       id: p.id,
       name: p.name,
+      nickname: p.nickname,
       paid: !!paidBy[p.id],
       reportsDone: reportCountBy[p.id] || 0,
       exam: examBy[p.id] || {},
@@ -197,22 +230,44 @@ export async function renderNav(){
   const linksHtml = links.map(l => `<a href="${l.href}">${l.label}</a>`).join('');
 
   const actionsHtml = cachedUser
-    ? `<span class="nav-user"><span aria-hidden="true">●</span>${escapeHtml((cachedProfile?.name || cachedUser.email).split(' ')[0])}</span>
+    ? `<span class="nav-user"><span aria-hidden="true">●</span>${escapeHtml(displayName())}</span>
        <a href="course.html" class="btn btn-ghost btn-sm">Кабинет</a>
        ${cachedProfile?.is_admin ? '<a href="admin.html" class="btn btn-ghost btn-sm">Админ</a>' : ''}
        <button class="btn btn-pedal btn-sm" id="nav-logout" type="button">Выйти</button>`
     : `<a href="auth.html" class="btn btn-ghost btn-sm">Войти</a>
        <a href="auth.html?mode=register" class="btn btn-pedal btn-sm">Начать бесплатно</a>`;
 
+  const mobileActionsHtml = cachedUser
+    ? `<a href="course.html">Кабинет</a>
+       ${cachedProfile?.is_admin ? '<a href="admin.html">Админ</a>' : ''}
+       <button type="button" id="nav-logout-mobile">Выйти</button>`
+    : `<a href="auth.html">Войти</a>
+       <a href="auth.html?mode=register">Начать бесплатно</a>`;
+
   mount.innerHTML = `
     <div class="wrap row">
       <a class="logo" href="index.html">${pickSvg()}GuitArt</a>
       <nav class="nav-links">${linksHtml}</nav>
       <div class="nav-actions">${actionsHtml}</div>
-    </div>`;
+      <button class="nav-burger" id="nav-burger" type="button" aria-label="Меню" aria-expanded="false">☰</button>
+    </div>
+    <nav class="nav-mobile" id="nav-mobile">${linksHtml}${mobileActionsHtml}</nav>`;
 
-  const logoutBtn = document.getElementById('nav-logout');
-  if(logoutBtn) logoutBtn.addEventListener('click', signOutUser);
+  [document.getElementById('nav-logout'), document.getElementById('nav-logout-mobile')]
+    .forEach(btn => btn && btn.addEventListener('click', signOutUser));
+
+  const burgerBtn = document.getElementById('nav-burger');
+  const mobilePanel = document.getElementById('nav-mobile');
+  burgerBtn.addEventListener('click', () => {
+    const isOpen = mobilePanel.classList.toggle('is-open');
+    burgerBtn.setAttribute('aria-expanded', String(isOpen));
+    burgerBtn.textContent = isOpen ? '✕' : '☰';
+  });
+  mobilePanel.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    mobilePanel.classList.remove('is-open');
+    burgerBtn.setAttribute('aria-expanded', 'false');
+    burgerBtn.textContent = '☰';
+  }));
 }
 
 document.addEventListener('DOMContentLoaded', () => { renderNav(); });

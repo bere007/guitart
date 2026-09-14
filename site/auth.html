@@ -69,7 +69,12 @@
       <form class="form-panel" data-panel="register">
         <div class="field">
           <label for="r-name">Имя</label>
-          <input type="text" id="r-name" placeholder="Как к тебе обращаться" required>
+          <input type="text" id="r-name" placeholder="Для сертификата, как в документе" required>
+        </div>
+        <div class="field">
+          <label for="r-nickname">Никнейм</label>
+          <input type="text" id="r-nickname" placeholder="Как к тебе обращаться в кабинете" maxlength="24">
+          <p class="hint">Необязательно — так мы будем звать тебя в интерфейсе. Можно сменить позже.</p>
         </div>
         <div class="field">
           <label for="r-email">Email</label>
@@ -87,6 +92,8 @@
       <div class="container-narrow center" id="r-confirm" hidden style="padding:20px 0">
         <h3 style="font-size:1.1rem">Проверь почту</h3>
         <p class="muted" style="margin-top:8px;font-size:.9rem">Мы отправили ссылку для подтверждения — перейди по ней, а потом просто войди по email и паролю.</p>
+        <button type="button" class="btn btn-ghost btn-sm" id="resend-btn" style="margin-top:16px">Отправить письмо ещё раз</button>
+        <p class="hint" id="resend-hint" style="margin-top:10px"></p>
       </div>
 
       <form class="form-panel" data-panel="login">
@@ -100,13 +107,26 @@
         </div>
         <p class="error-text" id="l-error">Неверный email или пароль.</p>
         <button type="submit" class="btn btn-pedal btn-block" id="l-submit">Войти в кабинет</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-block" id="forgot-open" style="margin-top:10px">Забыл(а) пароль?</button>
       </form>
+
+      <div class="container-narrow" id="forgot-panel" hidden>
+        <h3 style="font-size:1.05rem">Восстановление пароля</h3>
+        <p class="muted" style="margin-top:6px;font-size:.88rem">Пришлём ссылку для сброса на почту.</p>
+        <div class="field" style="margin-top:16px">
+          <label for="f-email">Email</label>
+          <input type="email" id="f-email" placeholder="you@example.com" required>
+        </div>
+        <button type="button" class="btn btn-pedal btn-block" id="forgot-submit">Отправить ссылку</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-block" id="forgot-cancel" style="margin-top:10px">Назад ко входу</button>
+        <p class="hint center" id="forgot-hint" style="margin-top:12px"></p>
+      </div>
     </div>
   </main>
 </div>
 
 <script type="module">
-import { signUp, signIn, signInGoogle, currentUser, whoAmI } from './app.js';
+import { signUp, signIn, signInGoogle, currentUser, whoAmI, resendConfirmation, requestPasswordReset } from './app.js';
 
 const params = new URLSearchParams(window.location.search);
 const nextPage = params.get('next');
@@ -128,10 +148,13 @@ function redirectAfterAuth(){
 // Already signed in? Skip straight past the form.
 whoAmI().then(user => { if(user) redirectAfterAuth(); });
 
+let lastRegisteredEmail = '';
+
 const registerForm = document.querySelector('[data-panel="register"]');
 registerForm.addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('r-name').value.trim();
+  const nickname = document.getElementById('r-nickname').value.trim();
   const email = document.getElementById('r-email').value.trim();
   const pass = document.getElementById('r-pass').value;
   const err = document.getElementById('r-error');
@@ -140,7 +163,7 @@ registerForm.addEventListener('submit', async function(e){
 
   const submitBtn = document.getElementById('r-submit');
   submitBtn.disabled = true; submitBtn.textContent = 'Секунду…';
-  const error = await signUp(name, email, pass);
+  const error = await signUp(name, nickname, email, pass);
   submitBtn.disabled = false; submitBtn.textContent = 'Открыть бесплатную неделю';
 
   if(error){
@@ -149,8 +172,19 @@ registerForm.addEventListener('submit', async function(e){
     return;
   }
   if(currentUser()){ redirectAfterAuth(); return; }
-  registerForm.hidden = true;
+  lastRegisteredEmail = email;
+  registerForm.classList.remove('is-active'); // .form-panel.is-active beats [hidden] in specificity
   document.getElementById('r-confirm').hidden = false;
+});
+
+document.getElementById('resend-btn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const hint = document.getElementById('resend-hint');
+  if(!lastRegisteredEmail) return;
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  const error = await resendConfirmation(lastRegisteredEmail);
+  btn.disabled = false; btn.textContent = 'Отправить письмо ещё раз';
+  hint.textContent = error ? 'Не получилось: ' + error.message : 'Письмо отправлено ещё раз.';
 });
 
 const loginForm = document.querySelector('[data-panel="login"]');
@@ -172,6 +206,28 @@ loginForm.addEventListener('submit', async function(e){
 });
 
 document.getElementById('google-btn').addEventListener('click', () => signInGoogle());
+
+const loginFormEl = document.querySelector('[data-panel="login"]');
+const forgotPanel = document.getElementById('forgot-panel');
+document.getElementById('forgot-open').addEventListener('click', () => {
+  loginFormEl.classList.remove('is-active'); // .form-panel.is-active beats [hidden] in specificity
+  forgotPanel.hidden = false;
+  document.getElementById('f-email').value = document.getElementById('l-email').value;
+});
+document.getElementById('forgot-cancel').addEventListener('click', () => {
+  forgotPanel.hidden = true;
+  loginFormEl.classList.add('is-active');
+});
+document.getElementById('forgot-submit').addEventListener('click', async (e) => {
+  const email = document.getElementById('f-email').value.trim();
+  const hint = document.getElementById('forgot-hint');
+  if(!email){ hint.textContent = 'Укажи email.'; return; }
+  const btn = e.currentTarget;
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  const error = await requestPasswordReset(email);
+  btn.disabled = false; btn.textContent = 'Отправить ссылку';
+  hint.textContent = error ? 'Не получилось: ' + error.message : 'Если такой аккаунт есть, письмо со ссылкой уже отправлено.';
+});
 </script>
 </body>
 </html>

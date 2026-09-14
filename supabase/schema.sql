@@ -5,6 +5,7 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
+  nickname text not null,
   is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -17,8 +18,33 @@ create policy "profiles: user can read own" on public.profiles
 create policy "profiles: admin can read all" on public.profiles
   for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
 
-create policy "profiles: user can update own name" on public.profiles
+create policy "profiles: user can update own row" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- The policy above is row-level only -- without the trigger below, a student
+-- could update their OWN row and flip is_admin = true from devtools. This
+-- clamps is_admin back to its previous value for anyone who isn't already an
+-- admin, no matter what the client sends (name/nickname stay freely editable).
+create or replace function public.enforce_profile_columns()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  caller_is_admin boolean;
+begin
+  select is_admin into caller_is_admin from public.profiles where id = auth.uid();
+  if not coalesce(caller_is_admin, false) then
+    new.is_admin := old.is_admin;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_guard on public.profiles;
+create trigger profiles_guard
+  before update on public.profiles
+  for each row execute procedure public.enforce_profile_columns();
 
 -- ============ enrollments (payment status) ============
 create table if not exists public.enrollments (
@@ -137,8 +163,15 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name)
-    values (new.id, coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)));
+  insert into public.profiles (id, name, nickname)
+    values (
+      new.id,
+      coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+      coalesce(
+        nullif(new.raw_user_meta_data->>'nickname', ''),
+        split_part(coalesce(new.raw_user_meta_data->>'name', new.email), ' ', 1)
+      )
+    );
   insert into public.enrollments (user_id) values (new.id);
   insert into public.exam_bookings (user_id) values (new.id);
   return new;

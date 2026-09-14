@@ -65,7 +65,7 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, escapeHt
         const canMark = u.paid && u.reportsDone >= CURRICULUM.length && u.exam.slot && !u.exam.passed;
         return `
         <div class="roster-row">
-          <span class="r-name">${escapeHtml(u.name)}</span>
+          <span><span class="r-name">${escapeHtml(u.name)}</span><br><span class="r-mini">@${escapeHtml(u.nickname || '—')}</span></span>
           <span class="r-mini">${u.reportsDone} / ${CURRICULUM.length} отчётов</span>
           <span class="r-mini">${u.paid ? 'оплачен' : 'не оплачен'}</span>
           <span class="r-mini">${examLabel}</span>

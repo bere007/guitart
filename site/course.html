@@ -70,6 +70,15 @@
         <a href="exam.html" class="btn btn-copper btn-block" id="exam-cta" style="margin-top:18px;display:none">Записаться на экзамен</a>
       </div>
       <div class="card side-card">
+        <h3>Как к тебе обращаться</h3>
+        <p style="margin-top:6px">Никнейм виден только тебе и преподавателю в кабинете.</p>
+        <form id="nickname-form" style="margin-top:14px;display:flex;gap:8px">
+          <input type="text" id="nickname-input" maxlength="24" style="flex:1">
+          <button type="submit" class="btn btn-ghost btn-sm">Сохранить</button>
+        </form>
+        <p class="hint" id="nickname-hint" style="margin-top:8px"></p>
+      </div>
+      <div class="card side-card">
         <h3>Как это работает</h3>
         <p>Каждая неделя открывается после того, как ты сдашь видео-отчёт за предыдущую. Недели 2–8 дополнительно требуют оплаты полного курса.</p>
       </div>
@@ -78,13 +87,24 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, currentUser, fetchDashboard, submitReport, courseProgressPercent, startCheckout, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
   if(!user) return;
 
-  document.getElementById('greeting').textContent = 'Привет, ' + (currentProfile()?.name || user.email).split(' ')[0] + '!';
+  document.getElementById('greeting').textContent = 'Привет, ' + displayName() + '!';
+  document.getElementById('nickname-input').value = currentProfile()?.nickname || '';
+
+  document.getElementById('nickname-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = document.getElementById('nickname-input').value.trim();
+    const hint = document.getElementById('nickname-hint');
+    if(!value){ hint.textContent = 'Никнейм не может быть пустым.'; return; }
+    const error = await updateNickname(value);
+    hint.textContent = error ? 'Не получилось: ' + error.message : 'Сохранено!';
+    if(!error) document.getElementById('greeting').textContent = 'Привет, ' + displayName() + '!';
+  });
 
   let dash = await fetchDashboard();
 
