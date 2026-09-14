@@ -210,12 +210,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 .nav-mobile a:hover,
 .nav-mobile button:hover{color:var(--ink)}
-@media (max-width:860px){
+@media (max-width:1040px){
   .nav-links{display:none}
   .nav-actions{display:none}
   .nav-burger{display:inline-flex}
 }
-@media (min-width:861px){
+@media (min-width:1041px){
   .nav-mobile{display:none !important}
 }
 

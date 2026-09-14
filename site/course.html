@@ -28,8 +28,23 @@
   .week-head .wicon{width:18px;flex:none;color:var(--ink-faint)}
   .week-body{display:none;padding:0 20px 24px;border-top:1px solid var(--line)}
   .week-body.is-open{display:block}
-  .week-video{aspect-ratio:16/9;border-radius:12px;background:repeating-linear-gradient(135deg,var(--stage-3),var(--stage-3) 10px,var(--stage) 10px,var(--stage) 20px);display:flex;align-items:center;justify-content:center;margin:18px 0;color:var(--ink-faint);font-family:'Space Mono';font-size:.76rem}
-  .week-task{font-size:.9rem;color:var(--ink-dim)}
+  .lesson-list{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:1px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .lesson-list li{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--stage);font-size:.88rem}
+  .lesson-list .li-n{font-family:'Space Mono';font-size:.74rem;color:var(--ink-faint);width:18px;flex:none}
+  .lesson-list .li-title{flex:1}
+  .lesson-list .li-dur{font-family:'Space Mono';font-size:.72rem;color:var(--ink-faint)}
+  .week-task{font-size:.9rem;color:var(--ink-dim);margin-top:18px}
+
+  .quiz-box{margin-top:20px;padding-top:18px;border-top:1px dashed var(--line)}
+  .quiz-box h4{font-size:.9rem;display:flex;align-items:center;gap:8px}
+  .quiz-q{margin-top:16px}
+  .quiz-q p{font-size:.88rem;font-weight:700;margin-bottom:8px}
+  .quiz-opts{display:flex;flex-direction:column;gap:6px}
+  .quiz-opt{display:flex;align-items:center;gap:9px;font-size:.86rem;color:var(--ink-dim);cursor:pointer;padding:2px 0}
+  .quiz-opt input{accent-color:var(--pedal)}
+  .quiz-result{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.86rem;display:none}
+  .quiz-result.show{display:block}
+
   .report-box{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line)}
   .report-box textarea{margin-bottom:10px}
   .report-done{margin-top:14px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.86rem;color:var(--ink-dim)}
@@ -146,8 +161,29 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport,
         </button>
         <div class="week-body" id="body-${w.n}">
           ${unlocked ? `
-            <div class="week-video mono">видео-урок · неделя ${w.n}</div>
-            <p class="week-task"><b>Задание:</b> ${escapeHtml(w.task)}</p>
+            <ul class="lesson-list">
+              ${w.lessons.map((l, i) => `
+                <li><span class="li-n mono">${i + 1}</span><span class="li-title">${escapeHtml(l.title)}</span><span class="li-dur mono">${escapeHtml(l.duration)}</span></li>
+              `).join('')}
+            </ul>
+            <p class="week-task"><b>Задание на видео-отчёт:</b> ${escapeHtml(w.task)}</p>
+
+            <div class="quiz-box" data-quiz="${w.n}">
+              <h4><span>🎸</span> Проверь себя (${w.quiz.length} вопроса)</h4>
+              ${w.quiz.map((item, qi) => `
+                <div class="quiz-q">
+                  <p>${qi + 1}. ${escapeHtml(item.q)}</p>
+                  <div class="quiz-opts">
+                    ${item.options.map((opt, oi) => `
+                      <label class="quiz-opt"><input type="radio" name="q-${w.n}-${qi}" value="${oi}">${escapeHtml(opt)}</label>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+              <button type="button" class="btn btn-ghost btn-sm" data-check-quiz="${w.n}" style="margin-top:14px">Проверить ответы</button>
+              <div class="quiz-result" id="quiz-result-${w.n}"></div>
+            </div>
+
             ${done ? `
               <div class="report-done">Отчёт сдан:<br>«${escapeHtml(wk.reportText || 'без комментария')}»</div>
             ` : `
@@ -170,6 +206,28 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport,
         const isOpen = body.classList.contains('is-open');
         list.querySelectorAll('.week-body').forEach(b => b.classList.remove('is-open'));
         if(!isOpen) body.classList.add('is-open');
+      });
+    });
+
+    list.querySelectorAll('[data-check-quiz]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const n = parseInt(btn.dataset.checkQuiz, 10);
+        const week = CURRICULUM.find(w => w.n === n);
+        const box = document.querySelector(`[data-quiz="${n}"]`);
+        let correctCount = 0;
+        let answeredAll = true;
+        week.quiz.forEach((item, qi) => {
+          const picked = box.querySelector(`input[name="q-${n}-${qi}"]:checked`);
+          if(!picked){ answeredAll = false; return; }
+          if(parseInt(picked.value, 10) === item.correct) correctCount++;
+        });
+        const result = document.getElementById('quiz-result-' + n);
+        if(!answeredAll){
+          result.textContent = 'Ответь на все вопросы, чтобы узнать результат.';
+        } else {
+          result.textContent = `Результат: ${correctCount} из ${week.quiz.length} правильно.` + (correctCount === week.quiz.length ? ' Отлично, можно сдавать отчёт!' : ' Пересмотри уроки выше и попробуй ещё раз.');
+        }
+        result.classList.add('show');
       });
     });
 

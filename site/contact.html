@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Связь с преподавателями — GuitArt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .contact-wrap{padding:52px 0 100px;max-width:780px;margin:0 auto}
+  .contact-head p{color:var(--ink-dim);margin-top:12px;max-width:56ch}
+  .teacher-contacts{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:36px}
+  @media (max-width:640px){ .teacher-contacts{grid-template-columns:1fr} }
+  .tc-card{padding:28px;display:flex;flex-direction:column;align-items:flex-start}
+  .tc-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(155deg,var(--copper),var(--stage-3));display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque';font-weight:800;color:var(--stage);font-size:1.3rem}
+  .tc-card h3{font-size:1.15rem;margin-top:16px}
+  .tc-role{font-family:'Space Mono';font-size:.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;display:block}
+  .tc-phone{font-family:'Space Mono';font-size:.9rem;color:var(--ink-dim);margin-top:14px}
+  .wa-btn{
+    display:inline-flex;align-items:center;gap:8px;margin-top:16px;
+    padding:.75em 1.3em;border-radius:999px;background:var(--pedal);color:var(--pedal-ink);
+    text-decoration:none;font-weight:700;font-size:.9rem;
+  }
+  .wa-btn:hover{opacity:.9}
+  .faq-note{margin-top:40px;padding:22px 26px}
+  .faq-note h3{font-size:1rem}
+  .faq-note p{color:var(--ink-dim);font-size:.9rem;margin-top:8px}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<main class="wrap">
+  <div class="contact-wrap">
+    <div class="contact-head">
+      <span class="eyebrow">Связь с преподавателями</span>
+      <h1 style="font-size:clamp(1.7rem,3.2vw,2.3rem);margin-top:10px">Есть вопрос по курсу? Пиши напрямую</h1>
+      <p>Без ботов и очередей в поддержку — Санжар и Берекет отвечают в WhatsApp сами. Пишите по программе курса, оплате, переносу экзамена или если что-то не открывается в личном кабинете.</p>
+    </div>
+
+    <div class="teacher-contacts">
+      <div class="card tc-card">
+        <div class="tc-avatar">АС</div>
+        <h3>Абдирахман Санжар</h3>
+        <span class="tc-role">Программа и методология</span>
+        <span class="tc-phone">+7 708 717 28 50</span>
+        <a class="wa-btn" href="https://wa.me/77087172850" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.71-.84-1.97-.94-.26-.1-.46-.15-.65.15-.19.29-.75.94-.92 1.13-.17.19-.34.22-.63.07-.29-.15-1.22-.45-2.32-1.43-.86-.76-1.44-1.71-1.61-2-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.65-1.57-.9-2.15-.24-.57-.48-.49-.65-.5h-.56c-.19 0-.5.07-.77.36-.26.29-1 .98-1 2.4 0 1.41 1.03 2.77 1.17 2.97.15.19 2.03 3.1 4.93 4.35.69.3 1.22.48 1.64.61.69.22 1.32.19 1.82.11.55-.08 1.71-.7 1.95-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.34z"/><path d="M12.04 2C6.58 2 2.13 6.44 2.13 11.9c0 1.75.46 3.38 1.26 4.8L2 22l5.44-1.43a9.86 9.86 0 004.6 1.17h.01c5.46 0 9.9-4.44 9.9-9.9C21.96 6.44 17.5 2 12.04 2zm0 18.02h-.01a8.1 8.1 0 01-4.13-1.13l-.3-.18-3.23.85.86-3.15-.19-.32a8.12 8.12 0 01-1.25-4.29c0-4.5 3.66-8.16 8.16-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 012.39 5.77c0 4.5-3.67 8.16-8.16 8.16z"/></svg>
+          Написать в WhatsApp
+        </a>
+      </div>
+
+      <div class="card tc-card">
+        <div class="tc-avatar">АБ</div>
+        <h3>Абдисахиев Берекет</h3>
+        <span class="tc-role">Платформа и аттестация</span>
+        <span class="tc-phone">+7 705 495 57 04</span>
+        <a class="wa-btn" href="https://wa.me/77054955704" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.71-.84-1.97-.94-.26-.1-.46-.15-.65.15-.19.29-.75.94-.92 1.13-.17.19-.34.22-.63.07-.29-.15-1.22-.45-2.32-1.43-.86-.76-1.44-1.71-1.61-2-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.65-1.57-.9-2.15-.24-.57-.48-.49-.65-.5h-.56c-.19 0-.5.07-.77.36-.26.29-1 .98-1 2.4 0 1.41 1.03 2.77 1.17 2.97.15.19 2.03 3.1 4.93 4.35.69.3 1.22.48 1.64.61.69.22 1.32.19 1.82.11.55-.08 1.71-.7 1.95-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.34z"/><path d="M12.04 2C6.58 2 2.13 6.44 2.13 11.9c0 1.75.46 3.38 1.26 4.8L2 22l5.44-1.43a9.86 9.86 0 004.6 1.17h.01c5.46 0 9.9-4.44 9.9-9.9C21.96 6.44 17.5 2 12.04 2zm0 18.02h-.01a8.1 8.1 0 01-4.13-1.13l-.3-.18-3.23.85.86-3.15-.19-.32a8.12 8.12 0 01-1.25-4.29c0-4.5 3.66-8.16 8.16-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 012.39 5.77c0 4.5-3.67 8.16-8.16 8.16z"/></svg>
+          Написать в WhatsApp
+        </a>
+      </div>
+    </div>
+
+    <div class="card faq-note">
+      <h3>Прежде чем писать</h3>
+      <p>Если вопрос про доступ к неделе или отчёт — почти всегда ответ уже в <a href="course.html" style="color:var(--copper);text-decoration:underline">личном кабинете</a>: там видно, что именно открывает следующую неделю. Для вопросов по оплате — прямо на <a href="payment.html" style="color:var(--copper);text-decoration:underline">странице оплаты</a>.</p>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
