@@ -12,11 +12,30 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Whether the *current* user is an admin. SECURITY DEFINER makes this run as
+-- the function's owner (the table owner, which bypasses RLS by default)
+-- instead of the calling user -- so it can read profiles.is_admin without
+-- going through profiles' own RLS policies again. Any policy that instead
+-- wrote `exists (select 1 from public.profiles where ... and is_admin)`
+-- directly would re-trigger those same policies while evaluating them,
+-- which is an infinite-recursion error ("infinite recursion detected in
+-- policy for relation profiles") the moment two policies reference each
+-- other like that -- this function is what breaks the cycle.
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
 create policy "profiles: user can read own" on public.profiles
   for select using (auth.uid() = id);
 
 create policy "profiles: admin can read all" on public.profiles
-  for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+  for select using (public.is_admin());
 
 create policy "profiles: user can update own row" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
@@ -30,11 +49,8 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
-declare
-  caller_is_admin boolean;
 begin
-  select is_admin into caller_is_admin from public.profiles where id = auth.uid();
-  if not coalesce(caller_is_admin, false) then
+  if not public.is_admin() then
     new.is_admin := old.is_admin;
   end if;
   return new;
@@ -60,7 +76,7 @@ create policy "enrollments: user can read own" on public.enrollments
   for select using (auth.uid() = user_id);
 
 create policy "enrollments: admin can read all" on public.enrollments
-  for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+  for select using (public.is_admin());
 
 -- NOTE: intentionally no INSERT/UPDATE policy for regular users.
 -- "paid" can only be flipped by the create-checkout-session / stripe-webhook
@@ -83,7 +99,7 @@ create policy "reports: user can read own" on public.week_reports
   for select using (auth.uid() = user_id);
 
 create policy "reports: admin can read all" on public.week_reports
-  for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+  for select using (public.is_admin());
 
 create policy "reports: user can insert own" on public.week_reports
   for insert with check (
@@ -119,14 +135,14 @@ create policy "exam: user can read own" on public.exam_bookings
   for select using (auth.uid() = user_id);
 
 create policy "exam: admin can read all" on public.exam_bookings
-  for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+  for select using (public.is_admin());
 
 create policy "exam: user can book own slot" on public.exam_bookings
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "exam: admin can update any" on public.exam_bookings
-  for update using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+  for update using (public.is_admin())
+  with check (public.is_admin());
 
 -- RLS policies above only guard *which row* a student may touch, not *which
 -- column* -- a student's own UPDATE would otherwise be able to set passed = true
@@ -138,11 +154,8 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
-declare
-  caller_is_admin boolean;
 begin
-  select is_admin into caller_is_admin from public.profiles where id = auth.uid();
-  if not coalesce(caller_is_admin, false) then
+  if not public.is_admin() then
     new.passed := old.passed;
     new.passed_at := old.passed_at;
     new.certificate_name := old.certificate_name;

@@ -21,7 +21,9 @@
 5. (Необязательно) **Authentication → Providers → Google** — включи, если нужен реальный вход через Google. Без этого шага email/пароль уже работает.
 6. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
 
-> **Уже выполнял(а) `schema.sql` раньше?** Обязательно выполни ещё и [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — он добавляет никнейм и **закрывает уязвимость**: без него любой ученик мог сам выдать себе admin-доступ через devtools (`supabase.from('profiles').update({is_admin:true})`), потому что политика проверяла только «своя ли это строка», а не какие поля меняются.
+> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё два файла:
+> 1. [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — добавляет никнейм и закрывает уязвимость (ученик мог сам выдать себе admin через devtools).
+> 2. [`supabase/migrations/003_fix_profiles_rls_recursion.sql`](supabase/migrations/003_fix_profiles_rls_recursion.sql) — чинит ошибку `infinite recursion detected in policy for relation "profiles"` (она была в политиках с самого начала, просто не успела проявиться раньше).
 
 ### 2. Стать преподавателем (admin)
 
