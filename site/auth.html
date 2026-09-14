@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вход — GuitArt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .auth-shell{min-height:calc(100vh - 73px);display:grid;grid-template-columns:1fr 1fr}
+  @media (max-width:900px){ .auth-shell{grid-template-columns:1fr} }
+  .auth-side{
+    background:var(--stage-2);
+    border-right:1px solid var(--line);
+    padding:64px 56px;
+    display:flex;flex-direction:column;justify-content:space-between;
+  }
+  @media (max-width:900px){ .auth-side{display:none} }
+  .auth-side blockquote{font-family:'Bricolage Grotesque';font-weight:700;font-size:1.6rem;line-height:1.2;margin:0;text-wrap:balance}
+  .auth-side cite{display:block;font-style:normal;font-family:'Space Mono';font-size:.78rem;color:var(--ink-faint);margin-top:16px}
+  .auth-main{display:flex;align-items:center;justify-content:center;padding:56px 24px}
+  .auth-box{width:100%;max-width:400px}
+  .tabs{display:flex;gap:6px;background:var(--stage-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:32px}
+  .tab-btn{flex:1;border:none;background:transparent;padding:.7em 1em;border-radius:999px;font-family:'Manrope';font-weight:700;font-size:.86rem;color:var(--ink-dim);cursor:pointer}
+  .tab-btn.is-active{background:var(--pedal);color:var(--pedal-ink)}
+  .divider{display:flex;align-items:center;gap:12px;margin:22px 0;color:var(--ink-faint);font-size:.78rem}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--line)}
+  .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:.85em 1em;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font-family:'Manrope';font-weight:700;font-size:.9rem;cursor:pointer}
+  .gbtn:hover{border-color:var(--copper)}
+  .form-panel{display:none}
+  .form-panel.is-active{display:block}
+  .back-home{font-family:'Space Mono';font-size:.78rem;color:var(--ink-faint);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .back-home:hover{color:var(--copper)}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<div class="auth-shell">
+  <aside class="auth-side">
+    <a href="index.html" class="back-home">← на главную</a>
+    <blockquote>«Без отчётов я бы бросил на 3-й неделе, как обычно. А тут следующий урок просто не открывается».</blockquote>
+    <div>
+      <cite>— Аружан, неделя 6, курс GuitArt</cite>
+      <div class="strings" style="margin-top:40px"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-box">
+      <span class="eyebrow">Личный кабинет</span>
+      <h1 style="font-size:1.9rem;margin-top:10px">Начнём с 1-й недели</h1>
+      <p class="muted" style="margin-top:8px;font-size:.92rem">Бесплатно, без карты. Дальше — по прогрессу.</p>
+
+      <div class="tabs" style="margin-top:28px">
+        <button type="button" class="tab-btn" data-tab="register">Регистрация</button>
+        <button type="button" class="tab-btn" data-tab="login">Вход</button>
+      </div>
+
+      <button type="button" class="gbtn" id="google-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#EA4335" d="M9 3.6c1.32 0 2.5.45 3.44 1.34l2.58-2.58C13.46.9 11.4 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.68 5.1 6.66 3.6 9 3.6z"/><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.08-1.8 2.72l2.9 2.25c1.7-1.57 2.7-3.88 2.7-6.61z"/><path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 010-3.42l-3-2.33a9 9 0 000 8.08l3-2.33z"/><path fill="#34A853" d="M9 18c2.4 0 4.42-.79 5.9-2.15l-2.9-2.25c-.8.55-1.84.87-3 .87-2.34 0-4.32-1.5-5.04-3.6l-3 2.33C2.44 15.98 5.48 18 9 18z"/></svg>
+        Продолжить с Google <span class="faint" style="font-size:.72rem">(демо)</span>
+      </button>
+      <div class="divider">или по email</div>
+
+      <form class="form-panel" data-panel="register">
+        <div class="field">
+          <label for="r-name">Имя</label>
+          <input type="text" id="r-name" placeholder="Как к тебе обращаться" required>
+        </div>
+        <div class="field">
+          <label for="r-email">Email</label>
+          <input type="email" id="r-email" placeholder="you@example.com" required>
+        </div>
+        <div class="field">
+          <label for="r-pass">Пароль</label>
+          <input type="password" id="r-pass" placeholder="Минимум 6 символов" required minlength="6">
+        </div>
+        <p class="error-text" id="r-error">Заполни имя, email и пароль от 6 символов.</p>
+        <button type="submit" class="btn btn-pedal btn-block" id="r-submit">Открыть бесплатную неделю</button>
+        <p class="hint center" style="margin-top:16px">Регистрируясь, ты соглашаешься получать письма о курсе.</p>
+      </form>
+
+      <div class="container-narrow center" id="r-confirm" hidden style="padding:20px 0">
+        <h3 style="font-size:1.1rem">Проверь почту</h3>
+        <p class="muted" style="margin-top:8px;font-size:.9rem">Мы отправили ссылку для подтверждения — перейди по ней, а потом просто войди по email и паролю.</p>
+      </div>
+
+      <form class="form-panel" data-panel="login">
+        <div class="field">
+          <label for="l-email">Email</label>
+          <input type="email" id="l-email" placeholder="you@example.com" required>
+        </div>
+        <div class="field">
+          <label for="l-pass">Пароль</label>
+          <input type="password" id="l-pass" placeholder="Твой пароль" required>
+        </div>
+        <p class="error-text" id="l-error">Неверный email или пароль.</p>
+        <button type="submit" class="btn btn-pedal btn-block" id="l-submit">Войти в кабинет</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { signUp, signIn, signInGoogle, currentUser, whoAmI } from './app.js';
+
+const params = new URLSearchParams(window.location.search);
+const nextPage = params.get('next');
+const initialMode = params.get('mode') === 'login' ? 'login' : 'register';
+
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = document.querySelectorAll('.form-panel');
+function setMode(mode){
+  tabs.forEach(b => b.classList.toggle('is-active', b.dataset.tab === mode));
+  panels.forEach(p => p.classList.toggle('is-active', p.dataset.panel === mode));
+}
+tabs.forEach(b => b.addEventListener('click', () => setMode(b.dataset.tab)));
+setMode(initialMode);
+
+function redirectAfterAuth(){
+  window.location.href = nextPage ? decodeURIComponent(nextPage) : 'course.html';
+}
+
+// Already signed in? Skip straight past the form.
+whoAmI().then(user => { if(user) redirectAfterAuth(); });
+
+const registerForm = document.querySelector('[data-panel="register"]');
+registerForm.addEventListener('submit', async function(e){
+  e.preventDefault();
+  const name = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pass = document.getElementById('r-pass').value;
+  const err = document.getElementById('r-error');
+  if(!name || !email || pass.length < 6){ err.textContent = 'Заполни имя, email и пароль от 6 символов.'; err.classList.add('show'); return; }
+  err.classList.remove('show');
+
+  const submitBtn = document.getElementById('r-submit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Секунду…';
+  const error = await signUp(name, email, pass);
+  submitBtn.disabled = false; submitBtn.textContent = 'Открыть бесплатную неделю';
+
+  if(error){
+    err.textContent = error.message.includes('already registered') ? 'Такой email уже зарегистрирован — попробуй войти.' : 'Не получилось зарегистрироваться: ' + error.message;
+    err.classList.add('show');
+    return;
+  }
+  if(currentUser()){ redirectAfterAuth(); return; }
+  registerForm.hidden = true;
+  document.getElementById('r-confirm').hidden = false;
+});
+
+const loginForm = document.querySelector('[data-panel="login"]');
+loginForm.addEventListener('submit', async function(e){
+  e.preventDefault();
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  const err = document.getElementById('l-error');
+  if(!email || !pass){ err.classList.add('show'); return; }
+  err.classList.remove('show');
+
+  const submitBtn = document.getElementById('l-submit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Секунду…';
+  const error = await signIn(email, pass);
+  submitBtn.disabled = false; submitBtn.textContent = 'Войти в кабинет';
+
+  if(error){ err.classList.add('show'); return; }
+  redirectAfterAuth();
+});
+
+document.getElementById('google-btn').addEventListener('click', () => signInGoogle());
+</script>
+</body>
+</html>

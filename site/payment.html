@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Оплата курса — GuitArt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .pay-wrap{max-width:520px;margin:0 auto;padding:48px 0 100px}
+  .summary-card{padding:28px}
+  .summary-card h3{font-size:1.1rem}
+  .sum-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:.9rem}
+  .sum-row:first-of-type{border-top:none}
+  .sum-total{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.4rem;display:flex;justify-content:space-between;margin-top:8px;padding-top:16px;border-top:1px solid var(--line-strong)}
+  .pay-note{margin-top:18px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.8rem;color:var(--ink-dim);display:flex;gap:10px;align-items:flex-start}
+
+  .state-panel{display:none;text-align:center;padding:56px 24px}
+  .state-panel.is-active{display:block}
+  .state-panel .check{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 18px}
+  .check.ok{background:var(--pedal);color:var(--pedal-ink)}
+  .check.cancel{background:var(--stage-3);color:var(--ink-dim);border:1px solid var(--line-strong)}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<main class="wrap">
+  <div class="pay-wrap">
+    <div id="panel-checkout">
+      <span class="eyebrow">Оплата</span>
+      <h1 style="font-size:clamp(1.7rem,3vw,2.2rem);margin-top:10px">Открыть недели 2–8</h1>
+
+      <div class="card summary-card" style="margin-top:24px">
+        <h3>Состав заказа</h3>
+        <div class="sum-row"><span class="muted">Курс «GuitArt», недели 2–8</span><span>7 недель</span></div>
+        <div class="sum-row"><span class="muted">Проверка отчётов куратором</span><span>включено</span></div>
+        <div class="sum-row"><span class="muted">Финальный экзамен и сертификат</span><span>включено</span></div>
+        <div class="sum-total"><span>Итого</span><span>9 990 ₸</span></div>
+        <button type="button" class="btn btn-pedal btn-block" id="checkout-btn" style="margin-top:22px">Перейти к оплате</button>
+        <div class="pay-note"><span>🔒</span><span>Данные карты вводятся на защищённой странице Stripe — сайт GuitArt их не видит и не хранит.</span></div>
+      </div>
+    </div>
+
+    <div class="card state-panel" id="panel-success">
+      <div class="check ok">✓</div>
+      <h3 style="font-size:1.3rem">Оплата прошла</h3>
+      <p class="muted" style="margin-top:10px">Недели 2–8 теперь будут открываться по мере сдачи отчётов.</p>
+      <a href="course.html" class="btn btn-pedal" style="margin-top:22px">В личный кабинет</a>
+    </div>
+
+    <div class="card state-panel" id="panel-cancel">
+      <div class="check cancel">✕</div>
+      <h3 style="font-size:1.3rem">Оплата не завершена</h3>
+      <p class="muted" style="margin-top:10px">Деньги не списаны. Можешь попробовать ещё раз в любой момент.</p>
+      <a href="payment.html" class="btn btn-ghost" style="margin-top:22px">Попробовать снова</a>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { requireAuth, startCheckout } from './app.js';
+
+(async () => {
+  const user = await requireAuth();
+  if(!user) return;
+
+  const status = new URLSearchParams(window.location.search).get('status');
+  if(status === 'success'){
+    document.getElementById('panel-checkout').hidden = true;
+    document.getElementById('panel-success').classList.add('is-active');
+    return;
+  }
+  if(status === 'cancel'){
+    document.getElementById('panel-checkout').hidden = true;
+    document.getElementById('panel-cancel').classList.add('is-active');
+    return;
+  }
+
+  document.getElementById('checkout-btn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true; btn.textContent = 'Открываем оплату…';
+    try{
+      const { redirect } = await startCheckout();
+      window.location.href = redirect;
+    }catch(err){
+      btn.disabled = false; btn.textContent = 'Перейти к оплате';
+      alert(err.message);
+    }
+  });
+})();
+</script>
+</body>
+</html>

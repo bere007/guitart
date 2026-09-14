@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GuitArt — онлайн-школа гитары</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ---- page-specific layout: landing ---- */
+  .hero{padding:56px 0 40px;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+  @media (max-width:920px){ .hero{grid-template-columns:1fr;padding-top:32px} }
+  .hero h1{font-size:clamp(2.4rem,5vw,4rem)}
+  .hero p.lede{font-size:1.15rem;color:var(--ink-dim);max-width:46ch;margin-top:20px}
+  .hero-cta{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+  .hero-meta{display:flex;gap:28px;margin-top:36px;flex-wrap:wrap}
+  .hero-meta div{font-family:'Space Mono';font-size:.78rem;color:var(--ink-faint)}
+  .hero-meta b{display:block;font-family:'Bricolage Grotesque';font-size:1.5rem;color:var(--ink);font-weight:800}
+  .hero-visual{position:relative;aspect-ratio:1/1;border-radius:24px;background:var(--stage-2);border:1px solid var(--line);overflow:hidden}
+  .hero-visual canvas{width:100%;height:100%;display:block}
+  .hero-visual .hv-label{position:absolute;left:18px;bottom:16px;font-family:'Space Mono';font-size:.72rem;color:var(--ink-faint);letter-spacing:.06em}
+
+  section{padding:64px 0}
+  .section-head{max-width:640px;margin-bottom:40px}
+  .section-head h2{font-size:clamp(1.7rem,3.2vw,2.4rem);margin-top:10px}
+  .section-head p{color:var(--ink-dim);margin-top:14px;font-size:1.02rem}
+
+  .uvp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media (max-width:860px){ .uvp-grid{grid-template-columns:1fr} }
+  .uvp-card{padding:28px}
+  .uvp-card .num{font-family:'Space Mono';color:var(--copper);font-size:.8rem}
+  .uvp-card h3{font-size:1.25rem;margin-top:14px}
+  .uvp-card p{color:var(--ink-dim);margin-top:10px;font-size:.94rem}
+
+  .journey{display:flex;flex-direction:column}
+  .j-step{display:grid;grid-template-columns:64px 1fr;gap:24px;padding:22px 0;border-top:1px solid var(--line)}
+  .j-step:last-child{border-bottom:1px solid var(--line)}
+  .j-step .jn{font-family:'Space Mono';font-size:1rem;color:var(--ink-faint);padding-top:2px}
+  .j-step h4{font-size:1.08rem}
+  .j-step p{color:var(--ink-dim);margin-top:6px;font-size:.92rem;max-width:60ch}
+
+  .curric-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px}
+  @media (max-width:920px){ .curric-wrap{grid-template-columns:1fr} }
+  .week-row{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:12px}
+  .week-row + .week-row{margin-top:6px}
+  .week-row .wk-n{font-family:'Space Mono';font-size:.82rem;color:var(--ink-faint);width:34px}
+  .week-row .wk-title{font-size:.94rem;flex:1}
+  .week-row.is-free{background:var(--stage-2);border:1px solid var(--copper)}
+  .week-row.is-free .wk-n{color:var(--copper)}
+  .curric-side{padding:28px}
+  .curric-side h3{font-size:1.3rem}
+  .curric-side p{color:var(--ink-dim);margin-top:12px;font-size:.94rem}
+
+  .teachers-scroll{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  @media (max-width:720px){ .teachers-scroll{grid-template-columns:1fr} }
+  .teacher-card{padding:26px;display:flex;gap:18px}
+  .t-avatar{width:64px;height:64px;border-radius:50%;flex:none;background:linear-gradient(155deg,var(--copper),var(--stage-3));display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque';font-weight:800;color:var(--stage);font-size:1.3rem}
+  .teacher-card h4{font-size:1.08rem}
+  .teacher-card .role{font-family:'Space Mono';font-size:.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;display:block}
+  .teacher-card p{color:var(--ink-dim);font-size:.9rem;margin-top:10px}
+
+  .reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media (max-width:920px){ .reviews-grid{grid-template-columns:1fr} }
+  .review-card{padding:24px}
+  .review-card .stars{font-family:'Space Mono';color:var(--pedal);font-size:.82rem;letter-spacing:.15em}
+  .review-card p{font-size:.94rem;color:var(--ink);margin-top:12px}
+  .review-card .who{margin-top:16px;font-size:.8rem;color:var(--ink-faint);font-family:'Space Mono'}
+
+  .pricing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  @media (max-width:760px){ .pricing-grid{grid-template-columns:1fr} }
+  .price-card{padding:32px;display:flex;flex-direction:column}
+  .price-card.is-main{border-color:var(--copper);position:relative}
+  .price-card .amount{font-family:'Bricolage Grotesque';font-weight:800;font-size:2.6rem;margin-top:14px}
+  .price-card .amount span{font-size:1rem;color:var(--ink-faint);font-weight:500;font-family:'Manrope'}
+  .price-card ul{list-style:none;padding:0;margin:22px 0 26px;display:flex;flex-direction:column;gap:10px}
+  .price-card li{font-size:.9rem;color:var(--ink-dim);display:flex;gap:10px}
+  .price-card li:before{content:"—";color:var(--copper)}
+  .price-card .btn{margin-top:auto}
+
+  .funnel-band{background:var(--stage-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .funnel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+  .funnel-cell{background:var(--stage-2);padding:26px 22px}
+  @media (max-width:860px){ .funnel-grid{grid-template-columns:1fr 1fr} }
+  .funnel-cell .fn-tag{font-family:'Space Mono';font-size:.68rem;color:var(--copper);text-transform:uppercase;letter-spacing:.08em}
+  .funnel-cell h5{font-size:.98rem;margin-top:10px}
+  .funnel-cell p{font-size:.84rem;color:var(--ink-dim);margin-top:8px}
+
+  .final-cta{padding:80px 0;text-align:center}
+  .final-cta h2{font-size:clamp(2rem,4vw,3rem);max-width:16ch;margin:0 auto}
+  .final-cta p{color:var(--ink-dim);margin-top:16px}
+  .final-cta .hero-cta{justify-content:center;margin-top:30px}
+
+  .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:32px}
+  @media (max-width:700px){ .footer-grid{grid-template-columns:1fr;gap:24px} }
+  .footer-grid h5{font-family:'Space Mono';font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:14px}
+  .footer-grid .flinks{display:flex;flex-direction:column;gap:9px;font-size:.88rem}
+  .foot-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px;padding-top:24px;border-top:1px solid var(--line);font-size:.8rem;color:var(--ink-faint)}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">● Приём на поток открыт</span>
+        <h1>Выучи гитару<br>за 8 недель —<br>на сцене, не в теории</h1>
+        <p class="lede">Авторский онлайн-курс с еженедельными видео-отчётами вместо зубрёжки теории. Первая неделя — бесплатно, дальше открываем уроки по мере твоего прогресса.</p>
+        <div class="hero-cta">
+          <a href="auth.html?mode=register" class="btn btn-pedal">Начать 1-ю неделю бесплатно</a>
+          <a href="#course" class="btn btn-ghost">Программа курса</a>
+        </div>
+        <div class="hero-meta">
+          <div><b>8</b>недель курса</div>
+          <div><b>1</b>неделя бесплатно</div>
+          <div><b>6</b>струн, 0 занудства</div>
+          <div><b>1:1</b>экзамен по видеозвонку</div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <canvas id="string-canvas"></canvas>
+        <span class="hv-label mono">E&nbsp;&nbsp;A&nbsp;&nbsp;D&nbsp;&nbsp;G&nbsp;&nbsp;B&nbsp;&nbsp;e &nbsp;· тронь струну</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap"><div class="strings"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Почему GuitArt</span>
+        <h2>Три вещи, которые отличают курс от плейлиста на YouTube</h2>
+      </div>
+      <div class="uvp-grid">
+        <div class="card uvp-card">
+          <span class="num mono">01 / FREEMIUM</span>
+          <h3>Неделя без риска</h3>
+          <p>Первая неделя курса полностью бесплатна — регистрируешься, занимаешься, сдаёшь отчёт. Платишь только если хочешь идти дальше.</p>
+        </div>
+        <div class="card uvp-card">
+          <span class="num mono">02 / ГЕЙМИФИКАЦИЯ</span>
+          <h3>Отчёт открывает следующий урок</h3>
+          <p>Новая неделя разблокируется только после видео-отчёта по текущей. Никакого «посмотрел и забыл» — только реальный прогресс.</p>
+        </div>
+        <div class="card uvp-card">
+          <span class="num mono">03 / АТТЕСТАЦИЯ</span>
+          <h3>Экзамен вживую, а не тест</h3>
+          <p>На 8-й неделе — личный созвон в Zoom с преподавателем и официальный сертификат по итогам, а не автоматический «диплом» за прохождение теста.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Путь ученика</span>
+        <h2>От регистрации до сертификата — шесть шагов</h2>
+        <p>Так выглядит платформа изнутри: от первого входа до закрытого личного кабинета с отчётами.</p>
+      </div>
+      <div class="journey">
+        <div class="j-step">
+          <span class="jn">00</span>
+          <div><h4>Регистрация</h4><p>Вход по email или Google — до старта курса ничего платить не нужно.</p></div>
+        </div>
+        <div class="j-step">
+          <span class="jn">01</span>
+          <div><h4>Главная страница</h4><p>Программа, преподаватели и отзывы учеников — чтобы понять, во что ты вписываешься.</p></div>
+        </div>
+        <div class="j-step">
+          <span class="jn">02</span>
+          <div><h4>Бесплатный модуль</h4><p>Уроки и задание 1-й недели: аккорды Em и G и первое видео-задание.</p></div>
+        </div>
+        <div class="j-step">
+          <span class="jn">03</span>
+          <div><h4>Оплата курса</h4><p>Разблокировка недель 2–8 прямо внутри платформы, без внешних менеджеров.</p></div>
+        </div>
+        <div class="j-step">
+          <span class="jn">04</span>
+          <div><h4>Личный кабинет</h4><p>Еженедельные видео-отчёты — каждый следующий урок открывается после проверки предыдущего.</p></div>
+        </div>
+        <div class="j-step">
+          <span class="jn">05</span>
+          <div><h4>Финальный экзамен</h4><p>Видеозвонок с преподавателем на 8-й неделе → именной сертификат GuitArt.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="strings"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+
+  <section id="course">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Программа</span>
+        <h2>8 недель, 8 отчётов, один трек, сыгранный целиком</h2>
+      </div>
+      <div class="curric-wrap">
+        <div>
+          <div class="week-row is-free">
+            <span class="wk-n mono">W1</span>
+            <span class="wk-title">Посадка, аккорды Em и G</span>
+            <span class="pill pill-open">бесплатно</span>
+          </div>
+          <div class="week-row"><span class="wk-n mono">W2</span><span class="wk-title">Бой шестёркой и аккорд C</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W3</span><span class="wk-title">Аккорд D и первый перебор</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W4</span><span class="wk-title">Барре F и зажимы</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W5</span><span class="wk-title">Перебор восьмёркой</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W6</span><span class="wk-title">Hammer-on и pull-off</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W7</span><span class="wk-title">Разбор трека целиком</span><span class="pill pill-locked">по подписке</span></div>
+          <div class="week-row"><span class="wk-n mono">W8</span><span class="wk-title">Подготовка к экзамену</span><span class="pill pill-locked">по подписке</span></div>
+        </div>
+        <div class="card curric-side">
+          <span class="eyebrow">Формат недели</span>
+          <h3>Видео + разбор + отчёт</h3>
+          <p>Каждую неделю: 2–3 видеоурока, таб и аккордовая схема в PDF, и одно домашнее видео-задание. Загружаешь отчёт в личном кабинете — куратор открывает следующую неделю.</p>
+          <a href="auth.html?mode=register" class="btn btn-copper" style="margin-top:22px">Открыть неделю 1 бесплатно</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="strings"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+
+  <section id="teachers">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Кто учит</span>
+        <h2>Авторы курса и преподаватели</h2>
+      </div>
+      <div class="teachers-scroll">
+        <div class="card teacher-card">
+          <div class="t-avatar">АС</div>
+          <div>
+            <h4>Абдирахман Санжар</h4>
+            <span class="role">Основатель, методология курса</span>
+            <p>Выстроил программу из 8 недель так, чтобы от «Em» до сыгранного целиком трека можно было дойти без преподавателя рядом — только по видео и структуре.</p>
+          </div>
+        </div>
+        <div class="card teacher-card">
+          <div class="t-avatar">АБ</div>
+          <div>
+            <h4>Абдисахиев Берекет</h4>
+            <span class="role">Основатель, платформа и аттестация</span>
+            <p>Отвечает за личный кабинет, систему отчётов и финальный экзамен по видеозвонку — то, что превращает курс в результат, а не в папку с видео.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reviews" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Отзывы</span>
+        <h2>Что говорят те, кто дошёл до отчёта №8</h2>
+      </div>
+      <div class="reviews-grid">
+        <div class="card review-card">
+          <div class="stars">★★★★★</div>
+          <p>«Бесплатная неделя решила всё — за 7 дней я реально выучил Em и G, поэтому купил курс без сомнений.»</p>
+          <div class="who">Диас, 19 лет · курс пройден за 9 недель</div>
+        </div>
+        <div class="card review-card">
+          <div class="stars">★★★★★</div>
+          <p>«Без отчётов я бы бросил на 3-й неделе как обычно. А тут следующий урок просто не открывается, пока не запишешь видео.»</p>
+          <div class="who">Аружан, 24 года · неделя 6 в процессе</div>
+        </div>
+        <div class="card review-card">
+          <div class="stars">★★★★★</div>
+          <p>«Экзамен по Zoom — неожиданно волнительно, но именно поэтому сертификат не стыдно показать.»</p>
+          <div class="who">Ержан, 31 год · сертификат получен</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="strings"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+
+  <section id="pricing">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Стоимость</span>
+        <h2>Попробуй бесплатно, плати только за результат</h2>
+      </div>
+      <div class="pricing-grid">
+        <div class="card price-card">
+          <span class="pill pill-open">Неделя 1</span>
+          <div class="amount">0 ₸</div>
+          <ul>
+            <li>2 видеоурока и таб-схемы</li>
+            <li>Аккорды Em и G</li>
+            <li>Проверка первого видео-отчёта</li>
+            <li>Доступ без карты</li>
+          </ul>
+          <a href="auth.html?mode=register" class="btn btn-ghost">Начать бесплатно</a>
+        </div>
+        <div class="card price-card is-main">
+          <span class="pill pill-done">Весь курс</span>
+          <div class="amount">9&nbsp;990&nbsp;₸<span> / разово</span></div>
+          <ul>
+            <li>Недели 2–8 полностью</li>
+            <li>Еженедельная проверка отчётов</li>
+            <li>Финальный экзамен по видеозвонку</li>
+            <li>Именной сертификат GuitArt</li>
+          </ul>
+          <a href="auth.html?mode=register" class="btn btn-pedal">Начать с бесплатной недели</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="funnel-band" style="padding:0">
+    <div class="wrap" style="padding-top:56px;padding-bottom:56px">
+      <div class="section-head" style="margin-bottom:28px">
+        <span class="eyebrow">Как мы приводим учеников</span>
+        <h2 style="font-size:1.6rem">Воронка в четыре шага</h2>
+      </div>
+    </div>
+    <div class="funnel-grid">
+      <div class="funnel-cell"><span class="fn-tag">Внимание</span><h5>TikTok / Reels</h5><p>Каверы, тренды и «выучи трек за 3 минуты» в коротких видео.</p></div>
+      <div class="funnel-cell"><span class="fn-tag">Интерес</span><h5>Кнопка на сайте</h5><p>«Начать 1-ю бесплатную неделю» — без оплаты и обязательств.</p></div>
+      <div class="funnel-cell"><span class="fn-tag">Желание</span><h5>Первый результат</h5><p>За неделю ученик реально разучивает первые аккорды.</p></div>
+      <div class="funnel-cell"><span class="fn-tag">Действие</span><h5>Спецпредложение</h5><p>Email / SMS / Telegram-бот со скидкой в конце бесплатной недели.</p></div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="wrap">
+      <h2>Первая струна — бесплатно. Дальше решаешь сам.</h2>
+      <p>Регистрация занимает минуту, первое видео можно записать уже сегодня вечером.</p>
+      <div class="hero-cta"><a href="auth.html?mode=register" class="btn btn-pedal">Начать 1-ю неделю бесплатно</a></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="logo" href="index.html" style="margin-bottom:12px;display:inline-flex">GuitArt</a>
+        <p class="faint" style="max-width:34ch;margin-top:10px">Онлайн-школа гитары с еженедельными отчётами и живым экзаменом вместо теста в конце курса.</p>
+      </div>
+      <div>
+        <h5>Курс</h5>
+        <div class="flinks">
+          <a href="index.html#course">Программа, 8 недель</a>
+          <a href="index.html#teachers">Преподаватели</a>
+          <a href="index.html#pricing">Стоимость</a>
+          <a href="auth.html?mode=register">Бесплатная неделя</a>
+        </div>
+      </div>
+      <div>
+        <h5>Соцсети</h5>
+        <div class="flinks">
+          <a href="#">TikTok — каверы и тренды</a>
+          <a href="#">Instagram Reels</a>
+          <a href="#">Telegram-бот со скидками</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 GuitArt. Курс: Абдирахман Санжар, Абдисахиев Берекет.</span>
+      <span class="mono">6 струн · 8 недель · 1 сертификат</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="app.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('string-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w, h, dpr;
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const strings = 6;
+  const amps = new Array(strings).fill(0);
+  const phase = Math.random() * 10;
+  let t = 0;
+
+  function pluck(){
+    for(let i=0;i<strings;i++) amps[i] = 22 - i*1.2;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    const style = getComputedStyle(document.documentElement);
+    const lineColor = style.getPropertyValue('--line-strong').trim() || 'rgba(200,180,150,.3)';
+    const copper = style.getPropertyValue('--copper').trim() || '#D98A3D';
+    const gap = h / (strings + 1);
+    for(let i=0;i<strings;i++){
+      const y0 = gap * (i+1);
+      ctx.beginPath();
+      const segs = 60;
+      for(let s=0;s<=segs;s++){
+        const x = (w/segs)*s;
+        const decay = Math.exp(-t*1.6) ;
+        const y = y0 + Math.sin((x/w)*Math.PI) * amps[i] * decay * Math.sin(t*7 - i*0.4 + phase);
+        if(s===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = i === 4 ? copper : lineColor;
+      ctx.lineWidth = 1 + i*0.35;
+      ctx.stroke();
+    }
+    t += 0.016;
+    if(t > 6) t = 0.001;
+  }
+
+  function loop(){ draw(); requestAnimationFrame(loop); }
+
+  if(reduceMotion){
+    amps.fill(4);
+    draw();
+  } else {
+    pluck();
+    loop();
+    canvas.addEventListener('mouseenter', () => { t = 0.001; pluck(); });
+  }
+})();
+</script>
+</body>
+</html>

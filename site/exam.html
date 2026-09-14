@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Финальный экзамен — GuitArt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .exam-wrap{max-width:640px;margin:0 auto;padding:52px 0 100px}
+  .state-panel{display:none}
+  .state-panel.is-active{display:block}
+  .locked-card{padding:40px;text-align:center}
+  .locked-card .lock{font-size:2rem;margin-bottom:12px}
+
+  .booking-card{padding:32px}
+  .slot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 24px}
+  @media (max-width:520px){ .slot-grid{grid-template-columns:1fr 1fr} }
+  .slot-btn{padding:.8em .6em;border-radius:10px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font-family:'Space Mono';font-size:.78rem;cursor:pointer;text-align:center}
+  .slot-btn:hover{border-color:var(--copper)}
+  .slot-btn.is-selected{background:var(--pedal);color:var(--pedal-ink);border-color:transparent}
+
+  .waiting-card{padding:40px;text-align:center}
+  .waiting-card .pulse{width:56px;height:56px;border-radius:50%;background:var(--stage-2);border:2px solid var(--copper);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.4rem}
+
+  .certificate{
+    padding:48px 40px;position:relative;overflow:hidden;
+    background:var(--stage-2);border:1px solid var(--line-strong);border-radius:18px;
+  }
+  .certificate:before{
+    content:"";position:absolute;inset:10px;border:1px solid var(--line-strong);border-radius:10px;pointer-events:none;
+  }
+  .cert-eyebrow{text-align:center;display:block}
+  .cert-title{text-align:center;font-size:1.9rem;margin-top:14px}
+  .cert-name{text-align:center;font-family:'Bricolage Grotesque';font-weight:800;font-size:2.1rem;color:var(--copper);margin-top:22px}
+  .cert-body{text-align:center;color:var(--ink-dim);margin-top:12px;font-size:.94rem;max-width:44ch;margin-left:auto;margin-right:auto}
+  .cert-foot{display:flex;justify-content:space-between;margin-top:36px;padding-top:20px;border-top:1px dashed var(--line-strong)}
+  .cert-sig{font-family:'Space Mono';font-size:.76rem;color:var(--ink-faint)}
+  .cert-sig b{display:block;font-family:'Bricolage Grotesque';color:var(--ink);font-size:.98rem;font-weight:700;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<main class="wrap">
+  <div class="exam-wrap">
+    <span class="eyebrow">8-я неделя</span>
+    <h1 style="font-size:clamp(1.7rem,3vw,2.2rem);margin-top:10px">Финальный экзамен</h1>
+    <p class="muted" style="margin-top:10px">Личный созвон в Zoom с преподавателем и сертификат по итогам.</p>
+
+    <div class="state-panel card locked-card" id="panel-locked" style="margin-top:32px">
+      <div class="lock">🔒</div>
+      <h3 style="font-size:1.15rem">Экзамен пока недоступен</h3>
+      <p class="muted" style="margin-top:10px" id="locked-reason">Сначала сдай отчёты за все 8 недель и оплати курс.</p>
+      <a href="course.html" class="btn btn-ghost" style="margin-top:20px">В личный кабинет</a>
+    </div>
+
+    <div class="state-panel card booking-card" id="panel-booking" style="margin-top:32px">
+      <h3 style="font-size:1.15rem">Выбери слот для звонка</h3>
+      <p class="muted" style="margin-top:8px;font-size:.88rem">Ссылка на Zoom придёт на email за час до звонка.</p>
+      <div class="slot-grid" id="slot-grid"></div>
+      <button type="button" class="btn btn-pedal btn-block" id="book-btn" disabled>Записаться на экзамен</button>
+    </div>
+
+    <div class="state-panel card waiting-card" id="panel-waiting" style="margin-top:32px">
+      <div class="pulse">📹</div>
+      <h3 style="font-size:1.15rem">Звонок назначен: <span id="booked-slot" class="mono accent"></span></h3>
+      <p class="muted" style="margin-top:10px;max-width:40ch;margin-left:auto;margin-right:auto">Преподаватель проверит связку аккордов и разученный трек на звонке, а затем сам отметит результат — сертификат появится здесь автоматически.</p>
+    </div>
+
+    <div class="state-panel" id="panel-cert" style="margin-top:32px">
+      <div class="certificate">
+        <span class="eyebrow cert-eyebrow">GuitArt · Certificate of Completion</span>
+        <h2 class="cert-title">Сертификат об окончании курса</h2>
+        <div class="cert-name" id="cert-name">Имя Ученика</div>
+        <p class="cert-body">успешно прошёл(-ла) 8-недельный курс игры на гитаре «GuitArt», сдал(а) все еженедельные отчёты и итоговый экзамен по видеозвонку.</p>
+        <div class="cert-foot">
+          <div class="cert-sig"><b>Абдирахман Санжар</b>Основатель GuitArt</div>
+          <div class="cert-sig" style="text-align:right"><b id="cert-date">—</b>Дата выдачи</div>
+        </div>
+      </div>
+      <p class="hint center" style="margin-top:18px">Сертификат также сохранён в личном кабинете.</p>
+      <div class="center" style="margin-top:16px"><a href="course.html" class="btn btn-ghost">В личный кабинет</a></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { requireAuth, fetchDashboard, bookExamSlot } from './app.js';
+
+(async () => {
+  const user = await requireAuth();
+  if(!user) return;
+  const dash = await fetchDashboard();
+
+  const panels = {
+    locked: document.getElementById('panel-locked'),
+    booking: document.getElementById('panel-booking'),
+    waiting: document.getElementById('panel-waiting'),
+    cert: document.getElementById('panel-cert'),
+  };
+  function show(name){
+    Object.values(panels).forEach(p => p.classList.remove('is-active'));
+    panels[name].classList.add('is-active');
+  }
+
+  const week8done = dash.weeks[8].reportSubmitted;
+  const eligible = dash.paid && week8done;
+
+  if(!eligible){
+    document.getElementById('locked-reason').textContent = !dash.paid
+      ? 'Сначала оплати полный курс, затем сдай отчёты за все 8 недель.'
+      : 'Сначала сдай отчёт за 8-ю неделю в личном кабинете.';
+    show('locked');
+    return;
+  }
+
+  if(dash.exam.passed){
+    document.getElementById('cert-name').textContent = dash.exam.certificate_name || user.email;
+    document.getElementById('cert-date').textContent = new Date(dash.exam.passed_at).toLocaleDateString('ru-RU', { year:'numeric', month:'long', day:'numeric' });
+    show('cert');
+    return;
+  }
+
+  if(dash.exam.slot){
+    document.getElementById('booked-slot').textContent = dash.exam.slot;
+    show('waiting');
+  } else {
+    const slots = ['Пн, 19:00', 'Ср, 18:30', 'Чт, 20:00', 'Сб, 12:00', 'Сб, 15:00', 'Вс, 17:00'];
+    const grid = document.getElementById('slot-grid');
+    grid.innerHTML = slots.map(sl => `<button type="button" class="slot-btn" data-slot="${sl}">${sl}</button>`).join('');
+    let selected = null;
+    const bookBtn = document.getElementById('book-btn');
+    grid.querySelectorAll('.slot-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        grid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
+        selected = btn.dataset.slot;
+        bookBtn.disabled = false;
+      });
+    });
+    bookBtn.addEventListener('click', async () => {
+      if(!selected) return;
+      bookBtn.disabled = true; bookBtn.textContent = 'Записываем…';
+      const error = await bookExamSlot(selected);
+      if(error){ alert('Не получилось записаться: ' + error.message); bookBtn.disabled = false; bookBtn.textContent = 'Записаться на экзамен'; return; }
+      document.getElementById('booked-slot').textContent = selected;
+      show('waiting');
+    });
+    show('booking');
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Личный кабинет — GuitArt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .cabinet-head{padding:44px 0 28px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  .cabinet-head h1{font-size:clamp(1.8rem,3.4vw,2.4rem)}
+  .progress-wrap{min-width:220px}
+  .progress-label{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.72rem;color:var(--ink-faint);margin-bottom:8px}
+  .progress-bar{height:8px;border-radius:999px;background:var(--stage-3);overflow:hidden}
+  .progress-bar > i{display:block;height:100%;background:var(--pedal);border-radius:999px;transition:width .4s ease}
+
+  .cabinet-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:28px;padding-bottom:80px;align-items:start}
+  @media (max-width:900px){ .cabinet-grid{grid-template-columns:1fr} }
+
+  .week-card{border-radius:16px;margin-bottom:12px;overflow:hidden}
+  .week-card.is-locked{opacity:.55}
+  .week-head{display:flex;align-items:center;gap:16px;padding:18px 20px;cursor:pointer;background:transparent;border:none;width:100%;text-align:left;font-family:'Manrope';color:var(--ink)}
+  .week-card.is-locked .week-head{cursor:not-allowed}
+  .week-head .wn{font-family:'Space Mono';font-size:.82rem;color:var(--ink-faint);width:30px;flex:none}
+  .week-head .wt{flex:1;font-weight:700;font-size:.98rem}
+  .week-head .wicon{width:18px;flex:none;color:var(--ink-faint)}
+  .week-body{display:none;padding:0 20px 24px;border-top:1px solid var(--line)}
+  .week-body.is-open{display:block}
+  .week-video{aspect-ratio:16/9;border-radius:12px;background:repeating-linear-gradient(135deg,var(--stage-3),var(--stage-3) 10px,var(--stage) 10px,var(--stage) 20px);display:flex;align-items:center;justify-content:center;margin:18px 0;color:var(--ink-faint);font-family:'Space Mono';font-size:.76rem}
+  .week-task{font-size:.9rem;color:var(--ink-dim)}
+  .report-box{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line)}
+  .report-box textarea{margin-bottom:10px}
+  .report-done{margin-top:14px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.86rem;color:var(--ink-dim)}
+
+  .side-card{padding:26px;margin-bottom:20px}
+  .side-card h3{font-size:1.05rem}
+  .side-card p{color:var(--ink-dim);font-size:.88rem;margin-top:10px}
+  .status-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:.86rem}
+  .status-row:first-of-type{border-top:none}
+</style>
+</head>
+<body>
+
+<header id="site-nav" class="site-nav"></header>
+
+<main class="wrap">
+  <div class="cabinet-head">
+    <div>
+      <span class="eyebrow">Личный кабинет</span>
+      <h1 id="greeting">Привет!</h1>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>прогресс курса</span><span id="progress-num">0 / 8</span></div>
+      <div class="progress-bar"><i id="progress-bar-fill" style="width:0%"></i></div>
+    </div>
+  </div>
+
+  <div class="cabinet-grid">
+    <div id="weeks-list"></div>
+
+    <aside>
+      <div class="card side-card">
+        <h3>Статус курса</h3>
+        <div class="status-row"><span class="muted">Бесплатная неделя</span><span id="st-free">—</span></div>
+        <div class="status-row"><span class="muted">Полный курс</span><span id="st-paid">не оплачен</span></div>
+        <div class="status-row"><span class="muted">Экзамен</span><span id="st-exam">—</span></div>
+        <a href="payment.html" class="btn btn-pedal btn-block" id="pay-cta" style="margin-top:18px">Оплатить недели 2–8</a>
+        <a href="exam.html" class="btn btn-copper btn-block" id="exam-cta" style="margin-top:18px;display:none">Записаться на экзамен</a>
+      </div>
+      <div class="card side-card">
+        <h3>Как это работает</h3>
+        <p>Каждая неделя открывается после того, как ты сдашь видео-отчёт за предыдущую. Недели 2–8 дополнительно требуют оплаты полного курса.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+import { requireAuth, currentProfile, currentUser, fetchDashboard, submitReport, courseProgressPercent, startCheckout, escapeHtml, CURRICULUM } from './app.js';
+
+(async () => {
+  const user = await requireAuth();
+  if(!user) return;
+
+  document.getElementById('greeting').textContent = 'Привет, ' + (currentProfile()?.name || user.email).split(' ')[0] + '!';
+
+  let dash = await fetchDashboard();
+
+  function refreshStatusPanel(){
+    const done = CURRICULUM.filter(w => dash.weeks[w.n].reportSubmitted).length;
+    document.getElementById('progress-num').textContent = done + ' / ' + CURRICULUM.length;
+    document.getElementById('progress-bar-fill').style.width = courseProgressPercent(dash.weeks) + '%';
+
+    document.getElementById('st-free').textContent = dash.weeks[1].reportSubmitted ? 'пройдена' : 'в процессе';
+    document.getElementById('st-paid').textContent = dash.paid ? 'оплачен' : 'не оплачен';
+    document.getElementById('st-exam').textContent = dash.exam.passed ? 'сдан ✓' : (dash.exam.slot ? 'записан' : '—');
+
+    const payCta = document.getElementById('pay-cta');
+    const examCta = document.getElementById('exam-cta');
+    payCta.style.display = dash.paid ? 'none' : 'inline-flex';
+    examCta.style.display = (dash.paid && dash.weeks[8].reportSubmitted) ? 'inline-flex' : 'none';
+    examCta.textContent = dash.exam.passed ? 'Смотреть сертификат' : (dash.exam.slot ? 'Экзамен назначен' : 'Записаться на экзамен');
+  }
+
+  function lockReason(weekNum){
+    if(weekNum === 2 && !dash.paid && dash.weeks[1].reportSubmitted) return 'Открывается после оплаты курса';
+    return 'Открывается после отчёта за неделю ' + (weekNum - 1);
+  }
+
+  function renderWeeks(){
+    const list = document.getElementById('weeks-list');
+    list.innerHTML = CURRICULUM.map(w => {
+      const wk = dash.weeks[w.n];
+      const unlocked = wk.unlocked;
+      const done = wk.reportSubmitted;
+      const pill = done ? '<span class="pill pill-done">сдано</span>' : (unlocked ? '<span class="pill pill-open">открыто</span>' : '<span class="pill pill-locked">закрыто</span>');
+      return `
+      <div class="card week-card ${unlocked ? '' : 'is-locked'}" data-week="${w.n}">
+        <button type="button" class="week-head" data-toggle="${w.n}" ${unlocked ? '' : 'disabled'}>
+          <span class="wn mono">W${w.n}</span>
+          <span class="wt">${escapeHtml(w.title)}</span>
+          ${pill}
+          <span class="wicon">${unlocked ? (done ? '▾' : '▸') : ''}</span>
+        </button>
+        <div class="week-body" id="body-${w.n}">
+          ${unlocked ? `
+            <div class="week-video mono">видео-урок · неделя ${w.n}</div>
+            <p class="week-task"><b>Задание:</b> ${escapeHtml(w.task)}</p>
+            ${done ? `
+              <div class="report-done">Отчёт сдан:<br>«${escapeHtml(wk.reportText || 'без комментария')}»</div>
+            ` : `
+              <div class="report-box">
+                <label for="report-${w.n}">Ссылка на видео-отчёт (YouTube, Google Drive, Telegram)</label>
+                <textarea id="report-${w.n}" placeholder="https://..."></textarea>
+                <p class="error-text" id="report-error-${w.n}">Не получилось сдать отчёт. Проверь ссылку и попробуй ещё раз.</p>
+                <button type="button" class="btn btn-pedal" data-submit="${w.n}">Сдать отчёт за неделю ${w.n}</button>
+              </div>
+            `}
+          ` : `<p class="faint" style="padding:16px 0 4px">${lockReason(w.n)}</p>`}
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const n = btn.dataset.toggle;
+        const body = document.getElementById('body-' + n);
+        const isOpen = body.classList.contains('is-open');
+        list.querySelectorAll('.week-body').forEach(b => b.classList.remove('is-open'));
+        if(!isOpen) body.classList.add('is-open');
+      });
+    });
+
+    list.querySelectorAll('[data-submit]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const n = parseInt(btn.dataset.submit, 10);
+        const ta = document.getElementById('report-' + n);
+        const text = ta.value.trim();
+        const err = document.getElementById('report-error-' + n);
+        if(!text){ err.classList.add('show'); return; }
+        err.classList.remove('show');
+        btn.disabled = true; btn.textContent = 'Отправляем…';
+        const error = await submitReport(n, text);
+        if(error){
+          err.textContent = 'Не получилось сдать отчёт: ' + error.message;
+          err.classList.add('show');
+          btn.disabled = false; btn.textContent = 'Сдать отчёт за неделю ' + n;
+          return;
+        }
+        dash = await fetchDashboard();
+        renderWeeks();
+        refreshStatusPanel();
+        const body = document.getElementById('body-' + n);
+        if(body) body.classList.add('is-open');
+      });
+    });
+
+    const firstOpen = CURRICULUM.find(w => dash.weeks[w.n].unlocked && !dash.weeks[w.n].reportSubmitted);
+    if(firstOpen){
+      const b = document.getElementById('body-' + firstOpen.n);
+      if(b) b.classList.add('is-open');
+    }
+  }
+
+  document.getElementById('pay-cta').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    btn.textContent = 'Открываем оплату…';
+    try{
+      const { redirect } = await startCheckout();
+      window.location.href = redirect;
+    }catch(err){
+      btn.textContent = 'Оплатить недели 2–8';
+      alert(err.message);
+    }
+  });
+
+  renderWeeks();
+  refreshStatusPanel();
+})();
+</script>
+</body>
+</html>
