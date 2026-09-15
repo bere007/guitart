@@ -20,11 +20,12 @@
    ```
 5. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
 
-> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё четыре файла:
+> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё пять файлов:
 > 1. [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — добавляет никнейм и закрывает уязвимость (ученик мог сам выдать себе admin через devtools).
 > 2. [`supabase/migrations/003_fix_profiles_rls_recursion.sql`](supabase/migrations/003_fix_profiles_rls_recursion.sql) — чинит ошибку `infinite recursion detected in policy for relation "profiles"` (она была в политиках с самого начала, просто не успела проявиться раньше).
 > 3. [`supabase/migrations/004_video_reports_storage.sql`](supabase/migrations/004_video_reports_storage.sql) — переводит отчёты со ссылки на загрузку видео (создаёт приватный Storage bucket `reports`).
 > 4. [`supabase/migrations/005_lesson_videos.sql`](supabase/migrations/005_lesson_videos.sql) — даёт преподавателям (`is_admin = true`) загружать видео к урокам в админ-панели; ученики только смотрят.
+> 5. [`supabase/migrations/006_fix_admin_bootstrap_trigger.sql`](supabase/migrations/006_fix_admin_bootstrap_trigger.sql) — **выполни перед шагом 2 ниже**, иначе команда `update profiles set is_admin = true` из SQL Editor молча ничего не сделает (защитный триггер путал «владелец сайта в SQL Editor» с «ученик из devtools» и откатывал изменение).
 
 ### 1a. Google-вход
 

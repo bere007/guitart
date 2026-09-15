@@ -44,13 +44,19 @@ create policy "profiles: user can update own row" on public.profiles
 -- could update their OWN row and flip is_admin = true from devtools. This
 -- clamps is_admin back to its previous value for anyone who isn't already an
 -- admin, no matter what the client sends (name/nickname stay freely editable).
+-- auth.uid() is null when a query runs with no JWT at all -- the Supabase
+-- SQL Editor (as postgres) or a service-role backend call, both of which
+-- already require credentials no student has. Only clamp when there IS an
+-- authenticated caller and they aren't an admin; a null auth.uid() is
+-- trusted by definition, otherwise this trigger silently undoes the exact
+-- "make yourself an admin" bootstrap UPDATE at the bottom of this file.
 create or replace function public.enforce_profile_columns()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
 begin
-  if not public.is_admin() then
+  if auth.uid() is not null and not public.is_admin() then
     new.is_admin := old.is_admin;
   end if;
   return new;
@@ -156,7 +162,7 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  if not public.is_admin() then
+  if auth.uid() is not null and not public.is_admin() then
     new.passed := old.passed;
     new.passed_at := old.passed_at;
     new.certificate_name := old.certificate_name;
