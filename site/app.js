@@ -296,6 +296,49 @@ export async function getReportVideoUrl(path){
   return data.signedUrl;
 }
 
+const MAX_LESSON_BYTES = 300 * 1024 * 1024; // matches the "lessons" bucket's file_size_limit
+
+/** { "week-lessonIndex": video_path } for every lesson that has a video -- any signed-in user can read this. */
+export async function fetchLessonVideoMap(){
+  const { data } = await supabase.from('lesson_videos').select('week_number, lesson_index, video_path');
+  const map = {};
+  (data || []).forEach(row => { map[`${row.week_number}-${row.lesson_index}`] = row.video_path; });
+  return map;
+}
+
+/** Admin-only in practice (RLS rejects anyone else): uploads/replaces the video for one lesson. */
+export async function uploadLessonVideo(weekNumber, lessonIndex, file){
+  if(file.size > MAX_LESSON_BYTES){
+    return { error: { message: 'Файл больше 300 МБ — сожми видео или укороти его.' } };
+  }
+  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+  const path = `week-${weekNumber}/lesson-${lessonIndex}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('lessons')
+    .upload(path, file, { contentType: file.type || 'video/mp4', upsert: false });
+  if(uploadError) return { error: uploadError };
+
+  const { error } = await supabase
+    .from('lesson_videos')
+    .upsert(
+      { week_number: weekNumber, lesson_index: lessonIndex, video_path: path, uploaded_by: cachedUser.id },
+      { onConflict: 'week_number,lesson_index' },
+    );
+  if(error){
+    await supabase.storage.from('lessons').remove([path]);
+    return { error };
+  }
+  return { error: null };
+}
+
+/** A short-lived signed URL for playing back a lesson video. */
+export async function getLessonVideoUrl(path){
+  const { data, error } = await supabase.storage.from('lessons').createSignedUrl(path, 3600);
+  if(error) return null;
+  return data.signedUrl;
+}
+
 /** Calls the create-checkout-session Edge Function: real Stripe redirect, or a secure demo unlock if Stripe isn't configured yet. */
 export async function startCheckout(){
   const { data: { session } } = await supabase.auth.getSession();

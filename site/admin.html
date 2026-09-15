@@ -19,6 +19,16 @@
   .r-name{font-weight:700}
   .r-mini{font-family:'Space Mono';font-size:.72rem;color:var(--ink-faint)}
   .denied{padding:60px 20px;text-align:center}
+
+  .lessons-admin{margin-top:28px;display:flex;flex-direction:column;gap:14px}
+  .lweek-card{padding:20px 22px}
+  .lweek-card h3{font-size:1rem}
+  .lweek-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+  .lweek-row:first-of-type{border-top:none;margin-top:8px}
+  .lweek-title{flex:1;min-width:180px;font-size:.9rem}
+  .lweek-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
+  .lweek-status.is-done{color:var(--copper)}
+  .lweek-row input[type="file"]{max-width:220px;font-size:.78rem}
 </style>
 </head>
 <body>
@@ -38,11 +48,18 @@
     <p class="muted" style="margin-top:8px">Отмечай сдачу экзамена здесь — сертификат появится в личном кабинете ученика автоматически.</p>
 
     <div class="card roster" id="roster"></div>
+
+    <div style="margin-top:48px">
+      <span class="eyebrow">Материалы курса</span>
+      <h2 style="font-size:1.4rem;margin-top:8px">Видео к урокам</h2>
+      <p class="muted" style="margin-top:8px">Загружай видео для каждого урока здесь — ученики увидят кнопку «Смотреть» сразу после загрузки. Загружать и заменять может только преподаватель.</p>
+      <div class="lessons-admin" id="lessons-admin"></div>
+    </div>
   </div>
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLessonVideoMap, uploadLessonVideo, escapeHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -85,7 +102,43 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, escapeHt
     });
   }
 
+  async function renderLessons(){
+    const videoMap = await fetchLessonVideoMap();
+    const el = document.getElementById('lessons-admin');
+    el.innerHTML = CURRICULUM.map(w => `
+      <div class="card lweek-card">
+        <h3>W${w.n} · ${escapeHtml(w.title)}</h3>
+        ${w.lessons.map((l, i) => {
+          const has = !!videoMap[`${w.n}-${i}`];
+          return `
+          <div class="lweek-row">
+            <span class="lweek-title">${i + 1}. ${escapeHtml(l.title)}</span>
+            <span class="lweek-status ${has ? 'is-done' : ''}">${has ? 'видео загружено' : 'нет видео'}</span>
+            <input type="file" accept="video/*" id="lfile-${w.n}-${i}">
+            <button type="button" class="btn btn-ghost btn-sm" data-upload-lesson="${w.n}-${i}">${has ? 'Заменить' : 'Загрузить'}</button>
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('');
+
+    el.querySelectorAll('[data-upload-lesson]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const [weekNumber, lessonIndex] = btn.dataset.uploadLesson.split('-').map(Number);
+        const fileInput = document.getElementById(`lfile-${weekNumber}-${lessonIndex}`);
+        const file = fileInput.files[0];
+        if(!file){ alert('Выбери видеофайл.'); return; }
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Загружаем…';
+        const { error } = await uploadLessonVideo(weekNumber, lessonIndex, file);
+        btn.disabled = false; btn.textContent = originalLabel;
+        if(error){ alert('Не получилось: ' + error.message); return; }
+        renderLessons();
+      });
+    });
+  }
+
   render();
+  renderLessons();
 })();
 </script>
 </body>
