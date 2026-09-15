@@ -73,8 +73,10 @@
   @media (max-width:760px){ .pricing-grid{grid-template-columns:1fr} }
   .price-card{padding:32px;display:flex;flex-direction:column}
   .price-card.is-main{border-color:var(--copper);position:relative}
-  .price-card .amount{font-family:'Bricolage Grotesque';font-weight:800;font-size:2.6rem;margin-top:14px}
+  .price-card .amount{font-family:'Bricolage Grotesque';font-weight:800;font-size:2.6rem;margin-top:14px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   .price-card .amount span{font-size:1rem;color:var(--ink-faint);font-weight:500;font-family:'Manrope'}
+  .price-card .amount .old-price{font-size:1.35rem;font-weight:600;color:var(--ink-faint);text-decoration:line-through;text-decoration-color:var(--copper)}
+  .promo-pill{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:.4em .9em;border-radius:999px;background:var(--pedal);color:var(--pedal-ink);font-family:'Space Mono';font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
   .price-card ul{list-style:none;padding:0;margin:22px 0 26px;display:flex;flex-direction:column;gap:10px}
   .price-card li{font-size:.9rem;color:var(--ink-dim);display:flex;gap:10px}
   .price-card li:before{content:"—";color:var(--copper)}
@@ -303,7 +305,8 @@
         </div>
         <div class="card price-card is-main">
           <span class="pill pill-done">Весь курс</span>
-          <div class="amount">9&nbsp;990&nbsp;₸<span> / разово</span></div>
+          <div class="amount"><span class="old-price">9&nbsp;990&nbsp;₸</span>4&nbsp;990&nbsp;₸<span> / разово</span></div>
+          <span class="promo-pill">🔥 Первым 10 ученикам</span>
           <ul>
             <li>Недели 2–8 полностью</li>
             <li>Еженедельная проверка отчётов</li>

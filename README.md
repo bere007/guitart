@@ -73,7 +73,7 @@ update public.profiles set is_admin = true
 4. Заведи аккаунт на [stripe.com](https://stripe.com), возьми тестовый секретный ключ и укажи секреты:
    ```bash
    supabase secrets set STRIPE_SECRET_KEY=sk_test_...
-   supabase secrets set PRICE_AMOUNT=999000 PRICE_CURRENCY=kzt
+   supabase secrets set PRICE_AMOUNT=499000 PRICE_CURRENCY=kzt
    ```
 5. В Stripe Dashboard → Developers → Webhooks добавь endpoint `https://<project-ref>.functions.supabase.co/stripe-webhook`, событие `checkout.session.completed`, и добавь его подписной секрет:
    ```bash
