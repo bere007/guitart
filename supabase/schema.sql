@@ -88,7 +88,8 @@ create table if not exists public.week_reports (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   week_number int not null check (week_number between 1 and 8),
-  report_url text not null,
+  video_path text, -- storage.objects path: "<user-id>/week-N-<timestamp>.<ext>"
+  report_url text, -- legacy: a pasted link, from before reports were uploaded video
   submitted_at timestamptz not null default now(),
   unique (user_id, week_number)
 );
@@ -195,6 +196,37 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- ============ video reports storage ============
+-- Private bucket -- videos are only ever read back through a short-lived
+-- signed URL for the report's owner or an admin, never a public link.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'reports', 'reports', false,
+  209715200, -- 200 MB
+  array['video/mp4','video/quicktime','video/webm','video/x-matroska','video/3gpp','video/3gpp2']
+)
+on conflict (id) do update set
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- storage.objects ships with RLS already enabled. Files are uploaded to
+-- "<user-id>/week-N-<timestamp>.<ext>", so checking the first path segment
+-- against auth.uid() scopes each student to their own folder.
+create policy "reports bucket: user can upload own" on storage.objects
+  for insert with check (
+    bucket_id = 'reports' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "reports bucket: user can read own" on storage.objects
+  for select using (
+    bucket_id = 'reports' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "reports bucket: admin can read all" on storage.objects
+  for select using (
+    bucket_id = 'reports' and public.is_admin()
+  );
 
 -- ============ make yourself a teacher/admin ============
 -- After you sign up on the live site once, run this (swap the email):

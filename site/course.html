@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   .cabinet-head{padding:44px 0 28px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
   .cabinet-head h1{font-size:clamp(1.8rem,3.4vw,2.4rem)}
@@ -102,7 +103,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -185,13 +186,17 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport,
             </div>
 
             ${done ? `
-              <div class="report-done">Отчёт сдан:<br>«${escapeHtml(wk.reportText || 'без комментария')}»</div>
+              <div class="report-done">
+                Отчёт сдан.
+                ${wk.videoPath ? `<button type="button" class="btn btn-ghost btn-sm" data-watch="${w.n}" style="margin-top:10px">Смотреть видео</button><div class="report-video" id="report-video-${w.n}"></div>`
+                  : (wk.reportUrl ? `<a href="${escapeHtml(wk.reportUrl)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="margin-top:10px">Открыть ссылку</a>` : '')}
+              </div>
             ` : `
               <div class="report-box">
-                <label for="report-${w.n}">Ссылка на видео-отчёт (YouTube, Google Drive, Telegram)</label>
-                <textarea id="report-${w.n}" placeholder="https://..."></textarea>
-                <p class="error-text" id="report-error-${w.n}">Не получилось сдать отчёт. Проверь ссылку и попробуй ещё раз.</p>
-                <button type="button" class="btn btn-pedal" data-submit="${w.n}">Сдать отчёт за неделю ${w.n}</button>
+                <label for="report-${w.n}">Видео-отчёт (MP4, MOV, WebM — до 200 МБ)</label>
+                <input type="file" id="report-${w.n}" accept="video/*">
+                <p class="error-text" id="report-error-${w.n}">Не получилось сдать отчёт.</p>
+                <button type="button" class="btn btn-pedal" data-submit="${w.n}">Загрузить и сдать отчёт за неделю ${w.n}</button>
               </div>
             `}
           ` : `<p class="faint" style="padding:16px 0 4px">${lockReason(w.n)}</p>`}
@@ -234,17 +239,18 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport,
     list.querySelectorAll('[data-submit]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const n = parseInt(btn.dataset.submit, 10);
-        const ta = document.getElementById('report-' + n);
-        const text = ta.value.trim();
+        const fileInput = document.getElementById('report-' + n);
+        const file = fileInput.files[0];
         const err = document.getElementById('report-error-' + n);
-        if(!text){ err.classList.add('show'); return; }
+        if(!file){ err.textContent = 'Выбери видеофайл.'; err.classList.add('show'); return; }
         err.classList.remove('show');
-        btn.disabled = true; btn.textContent = 'Отправляем…';
-        const error = await submitReport(n, text);
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Загружаем видео…';
+        const { error } = await uploadReportVideo(n, file);
         if(error){
           err.textContent = 'Не получилось сдать отчёт: ' + error.message;
           err.classList.add('show');
-          btn.disabled = false; btn.textContent = 'Сдать отчёт за неделю ' + n;
+          btn.disabled = false; btn.textContent = originalLabel;
           return;
         }
         dash = await fetchDashboard();
@@ -252,6 +258,19 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, submitReport,
         refreshStatusPanel();
         const body = document.getElementById('body-' + n);
         if(body) body.classList.add('is-open');
+      });
+    });
+
+    list.querySelectorAll('[data-watch]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const n = btn.dataset.watch;
+        const holder = document.getElementById('report-video-' + n);
+        btn.disabled = true; btn.textContent = 'Открываем…';
+        const url = await getReportVideoUrl(dash.weeks[n].videoPath);
+        btn.disabled = false; btn.textContent = 'Смотреть видео';
+        if(!url){ holder.textContent = 'Не получилось загрузить видео.'; return; }
+        holder.innerHTML = `<video src="${url}" controls style="width:100%;border-radius:12px;margin-top:12px"></video>`;
+        btn.hidden = true;
       });
     });
 

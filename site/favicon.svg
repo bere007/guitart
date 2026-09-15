@@ -1,0 +1,10 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pickGrad" x1="7" y1="4" x2="25" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E2922E"/>
+      <stop offset="1" stop-color="#C6FF4D"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#15100C"/>
+  <path d="M16 7C21.1 7 25 10.9 25 15.4C25 19.7 21.1 24.5 16 27.2C10.9 24.5 7 19.7 7 15.4C7 10.9 10.9 7 16 7Z" fill="url(#pickGrad)"/>
+</svg>

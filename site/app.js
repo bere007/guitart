@@ -207,10 +207,14 @@ export async function updateNickname(nickname){
 }
 
 export async function signInGoogle(){
-  await supabase.auth.signInWithOAuth({
+  const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${location.origin}${location.pathname.replace(/[^/]+$/, '')}course.html` },
   });
+  // On success the browser navigates away to Google immediately, so any
+  // return here means it failed before that redirect (e.g. the Google
+  // provider isn't enabled in Supabase yet).
+  return error;
 }
 
 export async function signOutUser(){
@@ -233,7 +237,7 @@ export async function requireAuth(){
 export async function fetchDashboard(){
   const user = cachedUser;
   const [{ data: reports }, { data: enrollment }, { data: exam }] = await Promise.all([
-    supabase.from('week_reports').select('week_number, report_url, submitted_at').eq('user_id', user.id),
+    supabase.from('week_reports').select('week_number, report_url, video_path, submitted_at').eq('user_id', user.id),
     supabase.from('enrollments').select('paid, paid_at').eq('user_id', user.id).single(),
     supabase.from('exam_bookings').select('slot, booked_at, passed, passed_at, certificate_name').eq('user_id', user.id).single(),
   ]);
@@ -242,9 +246,14 @@ export async function fetchDashboard(){
   const paid = !!enrollment?.paid;
   const weeks = {};
   CURRICULUM.forEach(w => {
-    const submitted = !!reportByWeek[w.n];
+    const report = reportByWeek[w.n];
     const unlocked = w.n === 1 || (paid && !!reportByWeek[w.n - 1]);
-    weeks[w.n] = { unlocked, reportSubmitted: submitted, reportText: reportByWeek[w.n]?.report_url || '' };
+    weeks[w.n] = {
+      unlocked,
+      reportSubmitted: !!report,
+      videoPath: report?.video_path || null,
+      reportUrl: report?.report_url || null, // legacy: reports submitted before video upload existed
+    };
   });
   return { paid, weeks, exam: exam || {}, reportsDone: (reports || []).length };
 }
@@ -254,12 +263,37 @@ export function courseProgressPercent(weeks){
   return Math.round((done / CURRICULUM.length) * 100);
 }
 
-/** Inserts a report row; RLS on the server re-checks payment + sequencing, so this can't be spoofed. */
-export async function submitReport(weekNumber, url){
+const MAX_REPORT_BYTES = 200 * 1024 * 1024; // matches the "reports" bucket's file_size_limit
+
+/** Uploads the video to private storage, then records it; RLS re-checks payment + sequencing server-side. */
+export async function uploadReportVideo(weekNumber, file){
+  if(file.size > MAX_REPORT_BYTES){
+    return { error: { message: 'Файл больше 200 МБ — сожми видео или укороти его.' } };
+  }
+  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+  const path = `${cachedUser.id}/week-${weekNumber}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('reports')
+    .upload(path, file, { contentType: file.type || 'video/mp4', upsert: false });
+  if(uploadError) return { error: uploadError };
+
   const { error } = await supabase
     .from('week_reports')
-    .insert({ user_id: cachedUser.id, week_number: weekNumber, report_url: url });
-  return error;
+    .insert({ user_id: cachedUser.id, week_number: weekNumber, video_path: path });
+  if(error){
+    // Row was rejected (e.g. gating check failed) -- don't leave an orphaned file behind.
+    await supabase.storage.from('reports').remove([path]);
+    return { error };
+  }
+  return { error: null };
+}
+
+/** A short-lived signed URL for playing back a private report video. */
+export async function getReportVideoUrl(path){
+  const { data, error } = await supabase.storage.from('reports').createSignedUrl(path, 3600);
+  if(error) return null;
+  return data.signedUrl;
 }
 
 /** Calls the create-checkout-session Edge Function: real Stripe redirect, or a secure demo unlock if Stripe isn't configured yet. */
@@ -323,8 +357,14 @@ export function escapeHtml(str){
 }
 
 function pickSvg(){
-  return `<svg class="pick" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M4 20L18 4M18 4L13 4.5M18 4L17.5 9" stroke="var(--copper)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  return `<svg class="pick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="pickGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="var(--copper)"/>
+        <stop offset="1" stop-color="var(--pedal)"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 3.2C16.1 3.2 19.4 6.4 19.4 10.3C19.4 14 16.2 17.9 12 20.3C7.8 17.9 4.6 14 4.6 10.3C4.6 6.4 7.9 3.2 12 3.2Z" fill="url(#pickGrad)"/>
   </svg>`;
 }
 

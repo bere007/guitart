@@ -18,12 +18,23 @@
    export const SUPABASE_URL = 'https://xxxxxxxx.supabase.co';
    export const SUPABASE_ANON_KEY = 'eyJ...';
    ```
-5. (Необязательно) **Authentication → Providers → Google** — включи, если нужен реальный вход через Google. Без этого шага email/пароль уже работает.
-6. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
+5. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
 
-> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё два файла:
+> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё три файла:
 > 1. [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — добавляет никнейм и закрывает уязвимость (ученик мог сам выдать себе admin через devtools).
 > 2. [`supabase/migrations/003_fix_profiles_rls_recursion.sql`](supabase/migrations/003_fix_profiles_rls_recursion.sql) — чинит ошибку `infinite recursion detected in policy for relation "profiles"` (она была в политиках с самого начала, просто не успела проявиться раньше).
+> 3. [`supabase/migrations/004_video_reports_storage.sql`](supabase/migrations/004_video_reports_storage.sql) — переводит отчёты со ссылки на загрузку видео (создаёт приватный Storage bucket `reports`).
+
+### 1a. Google-вход
+
+Кнопка «Продолжить с Google» в коде уже полностью рабочая — не хватает только Google-провайдера, включённого в Supabase (это shared step для любого Supabase-проекта, я не могу сделать это за тебя, нужен твой Google-аккаунт):
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → создай проект (если нет) → **Create Credentials → OAuth client ID** → тип **Web application**.
+2. **Authorized JavaScript origins**: `https://bere007.github.io`
+3. **Authorized redirect URIs**: `https://<project-ref>.supabase.co/auth/v1/callback` (сам URL — в Supabase Dashboard → Authentication → Providers → Google, там же есть готовая кнопка «Copy redirect URI»).
+4. Скопируй **Client ID** и **Client Secret** → вставь в Supabase Dashboard → **Authentication → Providers → Google** → включи тумблер → Save.
+
+После этого кнопка на сайте заработает без единой правки кода. Пока не настроено — кнопка покажет понятную ошибку вместо тишины.
 
 ### 2. Стать преподавателем (admin)
 
@@ -71,13 +82,15 @@ site/                   статический фронтенд (деплоит�
   index.html             лендинг
   auth.html               регистрация / вход / восстановление пароля
   reset-password.html      установка нового пароля по ссылке из письма
-  course.html                личный кабинет ученика (+ смена никнейма)
-  payment.html                 оплата
-  exam.html                      запись на экзамен + сертификат (PNG)
-  admin.html                       панель преподавателя
-  app.js                             клиент Supabase + вся общая логика
-  config.js                           ключи Supabase (заполнить)
-  style.css                            дизайн-система
+  course.html                личный кабинет ученика (уроки, тесты, загрузка видео-отчёта)
+  contact.html                 связь с преподавателями (WhatsApp)
+  payment.html                   оплата
+  exam.html                        запись на экзамен + сертификат (PNG)
+  admin.html                         панель преподавателя
+  app.js                               клиент Supabase + вся общая логика
+  config.js                             ключи Supabase (заполнить)
+  favicon.svg                            иконка вкладки браузера
+  style.css                              дизайн-система
 supabase/
   schema.sql              таблицы + RLS-политики + триггеры (для нового проекта)
   migrations/               точечные изменения для уже существующего проекта
@@ -94,4 +107,5 @@ supabase/
 - поле `paid` нельзя изменить из браузера напрямую — только через серверную функцию (сервисным ключом), которая либо реально списывает деньги через Stripe, либо (в демо-режиме) сама решает выдать доступ;
 - поле `passed` (экзамен сдан) может выставить только аккаунт с `is_admin = true` — это форсируется триггером в базе, а не только в интерфейсе, так что подделать через devtools нельзя;
 - то же самое для поля `is_admin` в `profiles` — свой никнейм и имя ученик может менять свободно, но выставить себе `is_admin = true` не даст триггер `profiles_guard`, даже если строка «своя» по RLS;
-- отчёт за неделю N нельзя отправить, если не сдан отчёт за неделю N−1 или (для недель 2–8) курс не оплачен — проверка встроена в саму политику INSERT в базе.
+- отчёт за неделю N нельзя отправить, если не сдан отчёт за неделю N−1 или (для недель 2–8) курс не оплачен — проверка встроена в саму политику INSERT в базе;
+- видео-отчёты лежат в приватном Storage bucket `reports`, путь к файлу — `<user-id>/week-N-...`; читать и загружать в свою папку может только сам ученик (первый сегмент пути = его `auth.uid()`), весь бакет целиком видят только админы — смотреть видео можно только по короткоживущей подписанной ссылке (`createSignedUrl`, час), а не по постоянной публичной.
