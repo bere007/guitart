@@ -12,5 +12,5 @@ export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 // a teacher confirms it arrived and marks them paid from admin.html.
 // Fill in a real Kaspi-linked phone number and the name the transfer
 // should show as the recipient (Kaspi displays this for verification).
-export const KASPI_PHONE = '+7 700 000 00 00';
-export const KASPI_NAME = 'Имя Фамилия';
+export const KASPI_PHONE = '+7 708 717 28 50';
+export const KASPI_NAME = 'Абдирахман Санжар';
