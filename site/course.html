@@ -103,7 +103,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchWeekLessons, getLessonVideoUrl, fetchLectures, fetchLecturePhotos, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchWeekLessons, getLessonVideoUrl, fetchLectures, fetchLecturePhotos, getLecturePhotoUrl, courseProgressPercent, updateNickname, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -295,18 +295,8 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
     }
   }
 
-  document.getElementById('pay-cta').addEventListener('click', async (e) => {
-    e.preventDefault();
-    const btn = e.currentTarget;
-    btn.textContent = 'Открываем оплату…';
-    try{
-      const { redirect } = await startCheckout();
-      window.location.href = redirect;
-    }catch(err){
-      btn.textContent = 'Оплатить недели 2–8';
-      alert(err.message);
-    }
-  });
+  // pay-cta just navigates to payment.html (its href) -- the Kaspi transfer
+  // instructions and manual admin confirmation live there.
 
   renderWeeks();
   refreshStatusPanel();

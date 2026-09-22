@@ -84,10 +84,13 @@ create policy "enrollments: user can read own" on public.enrollments
 create policy "enrollments: admin can read all" on public.enrollments
   for select using (public.is_admin());
 
--- NOTE: intentionally no INSERT/UPDATE policy for regular users.
--- "paid" can only be flipped by the create-checkout-session / stripe-webhook
--- edge functions, which use the service_role key and bypass RLS.
--- This is what stops a student from unlocking the paid weeks from devtools.
+-- NOTE: intentionally no INSERT/UPDATE policy for regular users -- "paid"
+-- can only be flipped by an admin (e.g. confirming a Kaspi transfer by
+-- hand) or the create-checkout-session/stripe-webhook edge functions
+-- (service_role, bypasses RLS). This is what stops a student from
+-- unlocking the paid weeks from devtools.
+create policy "enrollments: admin can update" on public.enrollments
+  for update using (public.is_admin()) with check (public.is_admin());
 
 -- ============ week_reports ============
 create table if not exists public.week_reports (

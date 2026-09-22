@@ -16,13 +16,31 @@
   .sum-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:.9rem}
   .sum-row:first-of-type{border-top:none}
   .sum-total{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.4rem;display:flex;justify-content:space-between;margin-top:8px;padding-top:16px;border-top:1px solid var(--line-strong)}
-  .pay-note{margin-top:18px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.8rem;color:var(--ink-dim);display:flex;gap:10px;align-items:flex-start}
+
+  .kaspi-card{padding:28px;margin-top:20px}
+  .kaspi-card h3{font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  .kaspi-steps{list-style:none;padding:0;margin:18px 0 0;counter-reset:kaspi-step}
+  .kaspi-steps li{position:relative;padding:0 0 0 34px;margin-top:14px;font-size:.9rem;color:var(--ink-dim)}
+  .kaspi-steps li:first-child{margin-top:0}
+  .kaspi-steps li::before{
+    counter-increment:kaspi-step;content:counter(kaspi-step);
+    position:absolute;left:0;top:-1px;width:24px;height:24px;border-radius:50%;
+    background:var(--stage-3);color:var(--ink);font-family:'Space Mono';font-size:.76rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kaspi-detail{
+    margin-top:8px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px solid var(--line-strong);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .kaspi-detail .kd-value{font-family:'Space Mono';font-size:1.05rem;color:var(--copper);word-break:break-all}
+  .kaspi-detail .kd-label{font-size:.76rem;color:var(--ink-faint);display:block;margin-bottom:2px}
+  .copy-btn{flex:none}
+  .kaspi-note{margin-top:20px;padding:14px 16px;border-radius:10px;background:var(--stage);border:1px dashed var(--line-strong);font-size:.82rem;color:var(--ink-faint)}
 
   .state-panel{display:none;text-align:center;padding:56px 24px}
   .state-panel.is-active{display:block}
   .state-panel .check{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto 18px}
   .check.ok{background:var(--pedal);color:var(--pedal-ink)}
-  .check.cancel{background:var(--stage-3);color:var(--ink-dim);border:1px solid var(--line-strong)}
 </style>
 </head>
 <body>
@@ -42,56 +60,72 @@
         <div class="sum-row"><span class="muted">Финальный экзамен и сертификат</span><span>включено</span></div>
         <div class="sum-total"><span>Итого</span><span><span style="text-decoration:line-through;color:var(--ink-faint);font-size:.7em;margin-right:8px">9 990 ₸</span>4 990 ₸</span></div>
         <p class="hint" style="margin-top:6px">🔥 Акция для первых 10 учеников</p>
-        <button type="button" class="btn btn-pedal btn-block" id="checkout-btn" style="margin-top:22px">Оплатить 4 990 ₸</button>
-        <div class="pay-note"><span>🔒</span><span>Данные карты вводятся на защищённой странице Stripe — сайт GuitArt их не видит и не хранит.</span></div>
+      </div>
+
+      <div class="card kaspi-card">
+        <h3>💳 Оплата переводом на Kaspi</h3>
+        <ol class="kaspi-steps">
+          <li>
+            Открой Kaspi.kz и переведи <b>4 990 ₸</b> по номеру телефона:
+            <div class="kaspi-detail">
+              <div><span class="kd-label">Номер для перевода</span><span class="kd-value" id="kaspi-phone">—</span></div>
+              <button type="button" class="btn btn-ghost btn-sm copy-btn" data-copy="kaspi-phone">Скопировать</button>
+            </div>
+          </li>
+          <li>
+            Проверь, что получатель — <b><span id="kaspi-name">—</span></b>. В комментарии к переводу укажи свою почту, чтобы перевод было легко найти:
+            <div class="kaspi-detail">
+              <div><span class="kd-label">Комментарий к переводу</span><span class="kd-value" id="kaspi-comment">—</span></div>
+              <button type="button" class="btn btn-ghost btn-sm copy-btn" data-copy="kaspi-comment">Скопировать</button>
+            </div>
+          </li>
+          <li>
+            Готово — преподаватель увидит перевод в приложении Kaspi и подтвердит оплату в личном кабинете. Обычно это занимает не больше пары часов; статус на этой странице обновится сам.
+          </li>
+        </ol>
+        <div class="kaspi-note">Деньги идут напрямую на Kaspi Gold преподавателя — без комиссии и без ввода данных карты на сторонних сайтах. Если через день ничего не изменилось — напиши в <a href="contact.html" style="color:var(--copper);text-decoration:underline">WhatsApp</a>.</div>
       </div>
     </div>
 
     <div class="card state-panel" id="panel-success">
       <div class="check ok">✓</div>
-      <h3 style="font-size:1.3rem">Оплата прошла</h3>
+      <h3 style="font-size:1.3rem">Оплата подтверждена</h3>
       <p class="muted" style="margin-top:10px">Недели 2–8 теперь будут открываться по мере сдачи отчётов.</p>
       <a href="course.html" class="btn btn-pedal" style="margin-top:22px">В личный кабинет</a>
-    </div>
-
-    <div class="card state-panel" id="panel-cancel">
-      <div class="check cancel">✕</div>
-      <h3 style="font-size:1.3rem">Оплата не завершена</h3>
-      <p class="muted" style="margin-top:10px">Деньги не списаны. Можешь попробовать ещё раз в любой момент.</p>
-      <a href="payment.html" class="btn btn-ghost" style="margin-top:22px">Попробовать снова</a>
     </div>
   </div>
 </main>
 
 <script type="module">
-import { requireAuth, startCheckout } from './app.js';
+import { requireAuth, fetchDashboard, KASPI_PHONE_DISPLAY, KASPI_NAME_DISPLAY } from './app.js';
 
 (async () => {
   const user = await requireAuth();
   if(!user) return;
 
-  const status = new URLSearchParams(window.location.search).get('status');
-  if(status === 'success'){
+  const dash = await fetchDashboard();
+  if(dash.paid){
     document.getElementById('panel-checkout').hidden = true;
     document.getElementById('panel-success').classList.add('is-active');
     return;
   }
-  if(status === 'cancel'){
-    document.getElementById('panel-checkout').hidden = true;
-    document.getElementById('panel-cancel').classList.add('is-active');
-    return;
-  }
 
-  document.getElementById('checkout-btn').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    btn.disabled = true; btn.textContent = 'Открываем оплату…';
-    try{
-      const { redirect } = await startCheckout();
-      window.location.href = redirect;
-    }catch(err){
-      btn.disabled = false; btn.textContent = 'Перейти к оплате';
-      alert(err.message);
-    }
+  document.getElementById('kaspi-phone').textContent = KASPI_PHONE_DISPLAY;
+  document.getElementById('kaspi-name').textContent = KASPI_NAME_DISPLAY;
+  document.getElementById('kaspi-comment').textContent = user.email;
+
+  document.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = document.getElementById(btn.dataset.copy).textContent;
+      try{
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = 'Скопировано ✓';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      }catch{
+        alert(text);
+      }
+    });
   });
 })();
 </script>

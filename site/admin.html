@@ -90,7 +90,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWeekLessons, createLesson, updateLesson, deleteLesson, uploadLessonVideo, removeLessonVideo, fetchLectures, saveLecture, fetchLecturePhotos, addLecturePhoto, deleteLecturePhoto, getLecturePhotoUrl, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, setEnrollmentPaid, fetchWeekLessons, createLesson, updateLesson, deleteLesson, uploadLessonVideo, removeLessonVideo, fetchLectures, saveLecture, fetchLecturePhotos, addLecturePhoto, deleteLecturePhoto, getLecturePhotoUrl, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -116,7 +116,10 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWee
         <div class="roster-row">
           <span><span class="r-name">${escapeHtml(u.name)}</span><br><span class="r-mini">@${escapeHtml(u.nickname || '—')}</span></span>
           <span class="r-mini">${u.reportsDone} / ${CURRICULUM.length} отчётов</span>
-          <span class="r-mini">${u.paid ? 'оплачен' : 'не оплачен'}</span>
+          <span>
+            <span class="r-mini">${u.paid ? 'оплачен' : 'не оплачен'}</span><br>
+            <button type="button" class="btn ${u.paid ? 'btn-ghost' : 'btn-pedal'} btn-sm" style="margin-top:6px" data-toggle-paid="${u.id}" data-paid="${u.paid ? '1' : '0'}">${u.paid ? 'Отменить оплату' : 'Отметить оплату'}</button>
+          </span>
           <span class="r-mini">${examLabel}</span>
           <span>${canMark ? `<button type="button" class="btn btn-pedal btn-sm" data-mark="${u.id}" data-name="${escapeHtml(u.name)}">Отметить сдано</button>` : ''}</span>
         </div>`;
@@ -127,6 +130,17 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWee
       btn.addEventListener('click', async () => {
         btn.disabled = true; btn.textContent = 'Сохраняем…';
         const error = await markExamPassed(btn.dataset.mark, btn.dataset.name);
+        if(error){ alert('Не получилось: ' + error.message); }
+        render();
+      });
+    });
+
+    el.querySelectorAll('[data-toggle-paid]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const nextPaid = btn.dataset.paid !== '1';
+        if(!nextPaid && !confirm('Отменить оплату? Недели 2–8 снова закроются для ученика, если он ещё не сдал по ним отчёты.')) return;
+        btn.disabled = true; btn.textContent = 'Сохраняем…';
+        const error = await setEnrollmentPaid(btn.dataset.togglePaid, nextPaid);
         if(error){ alert('Не получилось: ' + error.message); }
         render();
       });

@@ -2,7 +2,10 @@
 // Real auth, real database, real RLS via Supabase. See ../supabase/schema.sql.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_URL } from './config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_URL, KASPI_PHONE, KASPI_NAME } from './config.js';
+
+export { KASPI_NAME as KASPI_NAME_DISPLAY };
+export const KASPI_PHONE_DISPLAY = KASPI_PHONE;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -369,6 +372,15 @@ export async function markExamPassed(userId, studentName){
   const { error } = await supabase
     .from('exam_bookings')
     .update({ passed: true, passed_at: new Date().toISOString(), certificate_name: studentName })
+    .eq('user_id', userId);
+  return error;
+}
+
+/** Admin-only in practice: confirms (or reverts) a student's payment by hand, e.g. after checking a Kaspi transfer. */
+export async function setEnrollmentPaid(userId, paid){
+  const { error } = await supabase
+    .from('enrollments')
+    .update({ paid, paid_at: paid ? new Date().toISOString() : null })
     .eq('user_id', userId);
   return error;
 }
