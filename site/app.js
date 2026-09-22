@@ -256,15 +256,15 @@ export async function getLessonVideoUrl(path){
   return data.signedUrl;
 }
 
-/** { weekNumber: {title, body, photo_path, task} } for every week that has content -- any signed-in user can read this. */
+/** { weekNumber: {title, body, task} } for every week that has content -- any signed-in user can read this. */
 export async function fetchLectures(){
-  const { data } = await supabase.from('week_lectures').select('week_number, title, body, photo_path, task');
+  const { data } = await supabase.from('week_lectures').select('week_number, title, body, task');
   const map = {};
   (data || []).forEach(row => { map[row.week_number] = row; });
   return map;
 }
 
-/** Admin-only in practice: writes/replaces the lecture text + task for one week (photo is uploaded separately). */
+/** Admin-only in practice: writes/replaces the lecture text + task for one week (photos are managed separately). */
 export async function saveLecture(weekNumber, { title, body, task }){
   const { error } = await supabase
     .from('week_lectures')
@@ -272,13 +272,21 @@ export async function saveLecture(weekNumber, { title, body, task }){
   return error;
 }
 
-/** Admin-only in practice: uploads/replaces the lecture photo for one week. */
-export async function uploadLecturePhoto(weekNumber, file){
+/** { weekNumber: [{id, photo_path}, ...] }, ordered -- any signed-in user can read this. */
+export async function fetchLecturePhotos(){
+  const { data } = await supabase.from('week_lecture_photos').select('id, week_number, photo_path, position').order('position');
+  const map = {};
+  (data || []).forEach(row => { (map[row.week_number] ||= []).push(row); });
+  return map;
+}
+
+/** Admin-only in practice: adds one more photo to a week's lecture (a week can have several). */
+export async function addLecturePhoto(weekNumber, file, position){
   if(file.size > MAX_PHOTO_BYTES){
     return { error: { message: 'Файл больше 15 МБ — сожми фото.' } };
   }
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-  const path = `week-${weekNumber}/lecture-photo-${Date.now()}.${ext}`;
+  const path = `week-${weekNumber}/lecture-photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from('lessons')
@@ -286,13 +294,20 @@ export async function uploadLecturePhoto(weekNumber, file){
   if(uploadError) return { error: uploadError };
 
   const { error } = await supabase
-    .from('week_lectures')
-    .upsert({ week_number: weekNumber, photo_path: path, updated_by: cachedUser.id }, { onConflict: 'week_number' });
+    .from('week_lecture_photos')
+    .insert({ week_number: weekNumber, photo_path: path, position });
   if(error){
     await supabase.storage.from('lessons').remove([path]);
     return { error };
   }
   return { error: null };
+}
+
+/** Admin-only in practice: removes one lecture photo. */
+export async function deleteLecturePhoto(id, photoPath){
+  const { error } = await supabase.from('week_lecture_photos').delete().eq('id', id);
+  if(!error && photoPath) await supabase.storage.from('lessons').remove([photoPath]);
+  return error;
 }
 
 /** A short-lived signed URL for displaying a lecture photo. */
@@ -363,9 +378,9 @@ export function escapeHtml(str){
 }
 
 /** Markup for a styled file input (see .file-picker in style.css) -- native <input type=file> hidden, a real button triggers it. */
-export function filePickerHtml(id, accept, label){
+export function filePickerHtml(id, accept, label, multiple){
   return `<div class="file-picker">
-    <input type="file" class="file-input" id="${id}" accept="${accept}">
+    <input type="file" class="file-input" id="${id}" accept="${accept}"${multiple ? ' multiple' : ''}>
     <label for="${id}" class="btn btn-ghost btn-sm file-picker-btn">${escapeHtml(label)}</label>
     <span class="file-picker-name" id="${id}-name">Файл не выбран</span>
   </div>`;
@@ -450,5 +465,7 @@ document.addEventListener('change', (e) => {
   if(!e.target.matches('.file-input')) return;
   const wrap = e.target.closest('.file-picker');
   const nameEl = wrap?.querySelector('.file-picker-name');
-  if(nameEl) nameEl.textContent = e.target.files[0]?.name || 'Файл не выбран';
+  if(!nameEl) return;
+  const files = e.target.files;
+  nameEl.textContent = files.length > 1 ? `Выбрано файлов: ${files.length}` : (files[0]?.name || 'Файл не выбран');
 });

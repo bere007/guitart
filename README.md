@@ -20,7 +20,7 @@
    ```
 5. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
 
-> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё семь файлов:
+> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё восемь файлов:
 > 1. [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — добавляет никнейм и закрывает уязвимость (ученик мог сам выдать себе admin через devtools).
 > 2. [`supabase/migrations/003_fix_profiles_rls_recursion.sql`](supabase/migrations/003_fix_profiles_rls_recursion.sql) — чинит ошибку `infinite recursion detected in policy for relation "profiles"` (она была в политиках с самого начала, просто не успела проявиться раньше).
 > 3. [`supabase/migrations/004_video_reports_storage.sql`](supabase/migrations/004_video_reports_storage.sql) — переводит отчёты со ссылки на загрузку видео (создаёт приватный Storage bucket `reports`).
@@ -28,6 +28,7 @@
 > 5. [`supabase/migrations/006_fix_admin_bootstrap_trigger.sql`](supabase/migrations/006_fix_admin_bootstrap_trigger.sql) — **выполни перед шагом 2 ниже**, иначе команда `update profiles set is_admin = true` из SQL Editor молча ничего не сделает (защитный триггер путал «владелец сайта в SQL Editor» с «ученик из devtools» и откатывал изменение).
 > 6. [`supabase/migrations/007_week_lectures.sql`](supabase/migrations/007_week_lectures.sql) — убирает тесты-квизы, добавляет лекцию (текст + фото) на каждую неделю; текст и фото пишет и загружает преподаватель в админ-панели, ничего не захардкожено заранее.
 > 7. [`supabase/migrations/008_dynamic_lessons_and_tasks.sql`](supabase/migrations/008_dynamic_lessons_and_tasks.sql) — уроки (название, длительность, видео) и задание на отчёт становятся полностью редактируемыми преподавателем: добавить, переименовать, удалить урок, загрузить/заменить/убрать видео — прямо в админ-панели, без правки кода. Переносит текущий список уроков и видео (если уже загружены) в новую структуру, ничего не теряется.
+> 8. [`supabase/migrations/009_multiple_lecture_photos.sql`](supabase/migrations/009_multiple_lecture_photos.sql) — к лекции можно прикрепить несколько фото вместо одного; переносит уже загруженное фото (если было) в новую галерею.
 
 ### 1a. Google-вход
 

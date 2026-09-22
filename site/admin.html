@@ -45,9 +45,14 @@
   .lec-field input[type="text"],.lec-field textarea{width:100%;background:var(--stage);border:1px solid var(--line-strong);border-radius:10px;padding:.7em .9em;font-family:'Manrope';font-size:.88rem;color:var(--ink)}
   .lec-field textarea{min-height:90px;resize:vertical}
   .lec-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
-  .lec-photo-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
-  .lec-photo-status.is-done{color:var(--copper)}
   .lec-hint{font-size:.76rem;color:var(--ink-faint)}
+
+  .lec-photos-grid{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+  .lec-photo-thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--stage)}
+  .lec-photo-thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .lec-photo-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(21,16,12,.75);color:#F3ECDF;font-size:.9rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .lec-photo-del:hover{background:var(--copper)}
+  .lec-photos-empty{font-size:.82rem;color:var(--ink-faint)}
 </style>
 </head>
 <body>
@@ -85,7 +90,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWeekLessons, createLesson, updateLesson, deleteLesson, uploadLessonVideo, removeLessonVideo, fetchLectures, saveLecture, uploadLecturePhoto, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWeekLessons, createLesson, updateLesson, deleteLesson, uploadLessonVideo, removeLessonVideo, fetchLectures, saveLecture, fetchLecturePhotos, addLecturePhoto, deleteLecturePhoto, getLecturePhotoUrl, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -231,10 +236,16 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWee
 
   async function renderLectures(){
     const lectures = await fetchLectures();
+    const photos = await fetchLecturePhotos();
+    const photoUrls = {};
+    await Promise.all(
+      Object.values(photos).flat().map(async p => { photoUrls[p.id] = await getLecturePhotoUrl(p.photo_path); }),
+    );
+
     const el = document.getElementById('lectures-admin');
     el.innerHTML = CURRICULUM.map(w => {
       const l = lectures[w.n] || {};
-      const hasPhoto = !!l.photo_path;
+      const weekPhotos = photos[w.n] || [];
       return `
       <div class="card lec-card">
         <h3>W${w.n} · ${escapeHtml(w.title)}</h3>
@@ -254,10 +265,21 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWee
           <button type="button" class="btn btn-ghost btn-sm" data-save-lecture="${w.n}">Сохранить текст и задание</button>
           <span class="lec-hint" id="lec-hint-${w.n}"></span>
         </div>
+
+        <div class="lec-field">
+          <label>Фото (можно несколько)</label>
+          <div class="lec-photos-grid">
+            ${weekPhotos.map(p => `
+              <div class="lec-photo-thumb">
+                <img src="${photoUrls[p.id] || ''}" alt="">
+                <button type="button" class="lec-photo-del" data-delete-photo="${p.id}" aria-label="Удалить фото">×</button>
+              </div>
+            `).join('') || '<span class="lec-photos-empty">Фото ещё не загружены.</span>'}
+          </div>
+        </div>
         <div class="lec-row">
-          <span class="lec-photo-status ${hasPhoto ? 'is-done' : ''}">${hasPhoto ? 'фото загружено' : 'нет фото'}</span>
-          ${filePickerHtml(`lec-photo-${w.n}`, 'image/*', hasPhoto ? 'Заменить фото' : 'Загрузить фото')}
-          <button type="button" class="btn btn-ghost btn-sm" data-upload-photo="${w.n}">Сохранить фото</button>
+          ${filePickerHtml(`lec-photo-${w.n}`, 'image/*', 'Добавить фото', true)}
+          <button type="button" class="btn btn-pedal btn-sm" data-upload-photo="${w.n}">Загрузить</button>
         </div>
       </div>`;
     }).join('');
@@ -280,13 +302,28 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWee
       btn.addEventListener('click', async () => {
         const n = parseInt(btn.dataset.uploadPhoto, 10);
         const fileInput = document.getElementById(`lec-photo-${n}`);
-        const file = fileInput.files[0];
-        if(!file){ alert('Выбери файл фото.'); return; }
+        const files = Array.from(fileInput.files || []);
+        if(!files.length){ alert('Выбери один или несколько файлов фото.'); return; }
         const originalLabel = btn.textContent;
         btn.disabled = true; btn.textContent = 'Загружаем…';
-        const { error } = await uploadLecturePhoto(n, file);
+        let startPosition = (photos[n] || []).length;
+        for(const file of files){
+          const { error } = await addLecturePhoto(n, file, startPosition++);
+          if(error){ alert('Не получилось: ' + error.message); break; }
+        }
         btn.disabled = false; btn.textContent = originalLabel;
-        if(error){ alert('Не получилось: ' + error.message); return; }
+        renderLectures();
+      });
+    });
+
+    el.querySelectorAll('[data-delete-photo]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.deletePhoto;
+        const photo = Object.values(photos).flat().find(p => String(p.id) === String(id));
+        if(!confirm('Удалить это фото?')) return;
+        btn.disabled = true;
+        const error = await deleteLecturePhoto(id, photo?.photo_path);
+        if(error){ alert('Не получилось: ' + error.message); btn.disabled = false; return; }
         renderLectures();
       });
     });

@@ -42,8 +42,8 @@
   .lecture-box{margin-top:22px;padding-top:20px;border-top:1px dashed var(--line)}
   .lecture-box h4{font-size:1.02rem;display:flex;align-items:center;gap:8px}
   .lecture-box p{font-size:.9rem;color:var(--ink-dim);margin-top:12px;max-width:64ch;white-space:pre-line}
-  .lecture-photo{margin-top:16px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--stage)}
-  .lecture-photo img{width:100%;display:block}
+  .lecture-photos{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .lecture-photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--stage);display:block}
   .lecture-soon{margin-top:14px;padding:16px 18px;border-radius:12px;background:var(--stage);border:1px dashed var(--line-strong);font-size:.86rem;color:var(--ink-faint)}
 
   .report-box{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line)}
@@ -103,7 +103,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchWeekLessons, getLessonVideoUrl, fetchLectures, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchWeekLessons, getLessonVideoUrl, fetchLectures, fetchLecturePhotos, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -125,11 +125,10 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
   let dash = await fetchDashboard();
   const weekLessons = await fetchWeekLessons();
   const lectures = await fetchLectures();
+  const lecturePhotos = await fetchLecturePhotos();
   const lecturePhotoUrls = {};
   await Promise.all(
-    Object.values(lectures)
-      .filter(l => l.photo_path)
-      .map(async l => { lecturePhotoUrls[l.week_number] = await getLecturePhotoUrl(l.photo_path); }),
+    Object.values(lecturePhotos).flat().map(async p => { lecturePhotoUrls[p.id] = await getLecturePhotoUrl(p.photo_path); }),
   );
 
   function refreshStatusPanel(){
@@ -186,7 +185,8 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
 
             ${(() => {
               const lecture = lectures[w.n];
-              const hasContent = lecture && (lecture.title || lecture.body || lecture.photo_path);
+              const photos = lecturePhotos[w.n] || [];
+              const hasContent = (lecture && (lecture.title || lecture.body)) || photos.length;
               if(!hasContent){
                 return `
                 <div class="lecture-box">
@@ -194,12 +194,11 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
                   <div class="lecture-soon">Текст и фото к лекции ещё готовит преподаватель — загляни сюда позже.</div>
                 </div>`;
               }
-              const photoUrl = lecturePhotoUrls[w.n];
               return `
               <div class="lecture-box">
-                <h4><span>📖</span> ${escapeHtml(lecture.title || 'Лекция недели ' + w.n)}</h4>
-                ${(lecture.body || '').split(/\n\s*\n/).filter(p => p.trim()).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('')}
-                ${photoUrl ? `<div class="lecture-photo"><img src="${photoUrl}" alt="${escapeHtml(lecture.title || '')}" loading="lazy"></div>` : ''}
+                <h4><span>📖</span> ${escapeHtml(lecture?.title || 'Лекция недели ' + w.n)}</h4>
+                ${((lecture?.body) || '').split(/\n\s*\n/).filter(p => p.trim()).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('')}
+                ${photos.length ? `<div class="lecture-photos">${photos.map(p => `<img src="${lecturePhotoUrls[p.id] || ''}" alt="${escapeHtml(lecture?.title || '')}" loading="lazy">`).join('')}</div>` : ''}
               </div>`;
             })()}
 

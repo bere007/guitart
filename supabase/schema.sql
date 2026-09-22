@@ -313,14 +313,13 @@ create policy "lessons bucket: admin can update" on storage.objects
 create policy "lessons bucket: admin can delete" on storage.objects
   for delete using (bucket_id = 'lessons' and public.is_admin());
 
--- ============ week lectures (teacher-written text + photo) ============
+-- ============ week lectures (teacher-written text + photos) ============
 -- Nothing pre-filled -- students see a placeholder until a teacher writes
 -- this in the admin panel. Same admin-writes/students-read split as above.
 create table if not exists public.week_lectures (
   week_number int primary key check (week_number between 1 and 8),
   title text,
   body text,
-  photo_path text,
   task text, -- the video-report assignment shown after the lecture; teacher-editable
   updated_by uuid references auth.users(id),
   updated_at timestamptz not null default now()
@@ -351,6 +350,26 @@ insert into public.week_lectures (week_number, task) values
   (7, 'Пришли полный разбор выбранного трека — куплет, припев, бридж.'),
   (8, 'Финальный прогон трека целиком, без остановок и подсказок.')
 on conflict (week_number) do update set task = excluded.task;
+
+-- ============ week lecture photos (a week can have several) ============
+create table if not exists public.week_lecture_photos (
+  id bigint generated always as identity primary key,
+  week_number int not null check (week_number between 1 and 8),
+  photo_path text not null,
+  position int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.week_lecture_photos enable row level security;
+
+create policy "week_lecture_photos: signed-in can read" on public.week_lecture_photos
+  for select using (auth.uid() is not null);
+
+create policy "week_lecture_photos: admin can insert" on public.week_lecture_photos
+  for insert with check (public.is_admin());
+
+create policy "week_lecture_photos: admin can delete" on public.week_lecture_photos
+  for delete using (public.is_admin());
 
 -- ============ make yourself a teacher/admin ============
 -- After you sign up on the live site once, run this (swap the email):
