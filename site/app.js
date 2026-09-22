@@ -15,12 +15,6 @@ export const CURRICULUM = [
       { title: 'Аккорд G: три варианта аппликатуры', duration: '6 мин' },
     ],
     task: 'Сними видео: чисто сыграй переход Em → G, 8 тактов подряд.',
-    quiz: [
-      { q: 'Сколько струн у стандартной гитары?', options: ['4', '5', '6', '7'], correct: 2 },
-      { q: 'Аккорд Em — это...', options: ['Мажорное трезвучие', 'Минорное трезвучие', 'Септаккорд', 'Уменьшённое трезвучие'], correct: 1 },
-      { q: 'В открытом аккорде Em зажаты струны:', options: ['Все шесть', '5-я и 4-я на 2-м ладу', '6-я и 1-я на 1-м ладу', 'Только 3-я'], correct: 1 },
-      { q: 'Стандартный строй гитары снизу вверх:', options: ['E A D G B E', 'A D G C E A', 'E A D F B E', 'D A D G B E'], correct: 0 },
-    ],
   },
   {
     n: 2, title: 'Бой шестёркой и аккорд C',
@@ -30,12 +24,6 @@ export const CURRICULUM = [
       { title: 'Связка Em–C–G без остановки', duration: '7 мин' },
     ],
     task: 'Пришли видео с боем «шестёрка» на связке Em–C–G, в темпе 80 BPM.',
-    quiz: [
-      { q: 'Сколько ударов в бое «шестёрка» за один такт?', options: ['4', '5', '6', '8'], correct: 2 },
-      { q: 'В открытом аккорде C какая струна обычно не звучит?', options: ['6-я (низкая E)', '1-я (высокая e)', '3-я (G)', '4-я (D)'], correct: 0 },
-      { q: '«Шестёрку» обычно бьют как:', options: ['вниз-вниз-вверх-вверх-вниз-вверх', 'вниз-вверх-вниз-вверх-вниз-вверх', 'вверх-вверх-вниз-вниз-вверх-вниз', 'вниз-вниз-вниз-вверх-вверх-вверх'], correct: 0 },
-      { q: 'Что важнее на этой неделе — скорость или чистота?', options: ['Скорость важнее', 'Чистота важнее, скорость придёт с практикой', 'Громкость важнее всего', 'Разницы нет'], correct: 1 },
-    ],
   },
   {
     n: 3, title: 'Аккорд D и первый бой-перебор',
@@ -45,12 +33,6 @@ export const CURRICULUM = [
       { title: 'Куплет песни на Em–C–G–D', duration: '8 мин' },
     ],
     task: 'Сыграй куплет любой песни на Em–C–G–D без остановки.',
-    quiz: [
-      { q: 'В открытом аккорде D задействованы струны:', options: ['6, 5, 4', '4, 3, 2, 1', '3, 2, 1', 'Все шесть'], correct: 1 },
-      { q: 'Чем перебор отличается от боя?', options: ['Играется только медиатором', 'Струны звучат по очереди, а не одним ударом', 'Перебор громче', 'Ничем не отличается'], correct: 1 },
-      { q: 'Какой палец обычно отвечает за басовую струну в переборе?', options: ['Большой', 'Указательный', 'Средний', 'Безымянный'], correct: 0 },
-      { q: 'Сколько аккордов в связке Em–C–G–D?', options: ['2', '3', '4', '5'], correct: 2 },
-    ],
   },
   {
     n: 4, title: 'Барре F и зажимы',
@@ -60,12 +42,6 @@ export const CURRICULUM = [
       { title: 'Полный барре F', duration: '8 мин' },
     ],
     task: 'Видео с чистым звучанием барре F, 4 переключения без глушения струн.',
-    quiz: [
-      { q: 'Барре — это:', options: ['Удар по всем струнам сразу', 'Зажим нескольких струн одним пальцем', 'Игра без медиатора', 'Вид перебора'], correct: 1 },
-      { q: 'Мини-F обычно играют без каких струн?', options: ['Без 6-й и 5-й', 'Без 1-й и 2-й', 'Без 3-й', 'Без 4-й'], correct: 0 },
-      { q: 'Почему барре тяжело даётся новичкам?', options: ['Нужны сила и точность прижима указательного пальца', 'Нужна особая гитара', 'Нужен медиатор большого размера', 'На самом деле барре лёгкое'], correct: 0 },
-      { q: 'Полный барре F строится как:', options: ['Указательный на 1-м ладу барре + форма E выше', 'Зажим только двух струн', 'Барре на 5-м ладу', 'Без единого зажатого лада'], correct: 0 },
-    ],
   },
   {
     n: 5, title: 'Перебор восьмёркой',
@@ -75,12 +51,6 @@ export const CURRICULUM = [
       { title: 'Игра с метрономом', duration: '6 мин' },
     ],
     task: 'Запиши перебор восьмёркой на прогрессии Am–F–C–G, метроном обязателен.',
-    quiz: [
-      { q: 'В «восьмёрке» за такт 4/4 играется нот:', options: ['4', '6', '8', '16'], correct: 2 },
-      { q: 'Зачем на этом этапе нужен метроном?', options: ['Чтобы не сбивать темп и играть ровно', 'Чтобы аккорды звучали громче', 'Метроном не нужен', 'Только для видео'], correct: 0 },
-      { q: 'Аккорд Am — это:', options: ['Минорное трезвучие от ля', 'Мажорное трезвучие от ля', 'Септаккорд', 'Уменьшённый аккорд'], correct: 0 },
-      { q: 'Прогрессия Am–F–C–G типична для тональности:', options: ['До мажор / Ля минор', 'Ре мажор', 'Соль минор', 'Ми мажор'], correct: 0 },
-    ],
   },
   {
     n: 6, title: 'Соло-техника: хаммер-он и пул-офф',
@@ -90,12 +60,6 @@ export const CURRICULUM = [
       { title: 'Комбинации hammer-on/pull-off во фразе', duration: '7 мин' },
     ],
     task: 'Сыграй тренировочную фразу с hammer-on/pull-off на 5-м ладу.',
-    quiz: [
-      { q: 'Hammer-on выполняется:', options: ['Резким ударом пальца по струне на ладу без повторного щипка', 'Отпусканием пальца со струны', 'Ударом медиатора вниз', 'Глушением струны ладонью'], correct: 0 },
-      { q: 'Pull-off — это:', options: ['Съём пальца так, чтобы струна продолжила звучать', 'Удар по струне сверху', 'Замена медиатора на пальцы', 'Смена строя гитары'], correct: 0 },
-      { q: 'Эти техники относятся к:', options: ['Соло-технике / легато', 'Только к аккордовому бою', 'Только к настройке гитары', 'К технике на басу'], correct: 0 },
-      { q: 'На каком ладу тренируем первые hammer-on/pull-off по программе?', options: ['На 5-м', 'На 12-м', 'На открытых струнах', 'На 1-м'], correct: 0 },
-    ],
   },
   {
     n: 7, title: 'Разбор трека целиком',
@@ -105,12 +69,6 @@ export const CURRICULUM = [
       { title: 'Разбор бриджа и перехода', duration: '7 мин' },
     ],
     task: 'Пришли полный разбор выбранного трека — куплет, припев, бридж.',
-    quiz: [
-      { q: 'Типичная структура поп-песни:', options: ['Куплет–припев–куплет–припев–бридж–припев', 'Только куплеты подряд', 'Только припев', 'Интро без остального'], correct: 0 },
-      { q: 'Бридж в песне — это:', options: ['Связка, отличающаяся от куплета и припева', 'Начало песни', 'Название аккорда', 'Синоним слова «припев»'], correct: 0 },
-      { q: 'Зачем разбирать трек по частям?', options: ['Так проще выучить и закрепить каждую часть', 'Так требует программа, смысла нет', 'Чтобы видео было длиннее', 'Без разницы, как учить'], correct: 0 },
-      { q: 'Что сделать перед записью финального видео за неделю?', options: ['Прогнать трек целиком несколько раз без остановок', 'Играть только сложные места', 'Не тренироваться', 'Сыграть только первый аккорд'], correct: 0 },
-    ],
   },
   {
     n: 8, title: 'Подготовка к экзамену',
@@ -120,12 +78,6 @@ export const CURRICULUM = [
       { title: 'Как проходит экзамен по видеозвонку', duration: '5 мин' },
     ],
     task: 'Финальный прогон трека целиком, без остановок и подсказок.',
-    quiz: [
-      { q: 'Сколько недель длится курс GuitArt?', options: ['4', '6', '8', '12'], correct: 2 },
-      { q: 'Что оценивает преподаватель на экзамене?', options: ['Только скорость игры', 'Чистоту аккордов, ритм и целостное исполнение', 'Только внешний вид', 'Экзамен формальный, ничего не оценивается'], correct: 1 },
-      { q: 'Как получить сертификат?', options: ['Сдать все отчёты, оплатить курс и пройти экзамен по видеозвонку', 'Просто зарегистрироваться', 'Досмотреть видео без практики', 'Он выдаётся автоматически после недели 1'], correct: 0 },
-      { q: 'Формат финального экзамена:', options: ['Личный видеозвонок с преподавателем', 'Письменный тест', 'Экзамена нет', 'Отправка аудио без видео'], correct: 0 },
-    ],
   },
 ];
 
@@ -297,6 +249,7 @@ export async function getReportVideoUrl(path){
 }
 
 const MAX_LESSON_BYTES = 300 * 1024 * 1024; // matches the "lessons" bucket's file_size_limit
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 
 /** { "week-lessonIndex": video_path } for every lesson that has a video -- any signed-in user can read this. */
 export async function fetchLessonVideoMap(){
@@ -334,6 +287,52 @@ export async function uploadLessonVideo(weekNumber, lessonIndex, file){
 
 /** A short-lived signed URL for playing back a lesson video. */
 export async function getLessonVideoUrl(path){
+  const { data, error } = await supabase.storage.from('lessons').createSignedUrl(path, 3600);
+  if(error) return null;
+  return data.signedUrl;
+}
+
+/** { weekNumber: {title, body, photo_path} } for every week that has lecture content -- any signed-in user can read this. */
+export async function fetchLectures(){
+  const { data } = await supabase.from('week_lectures').select('week_number, title, body, photo_path');
+  const map = {};
+  (data || []).forEach(row => { map[row.week_number] = row; });
+  return map;
+}
+
+/** Admin-only in practice: writes/replaces the lecture text for one week (photo is uploaded separately). */
+export async function saveLecture(weekNumber, { title, body }){
+  const { error } = await supabase
+    .from('week_lectures')
+    .upsert({ week_number: weekNumber, title, body, updated_by: cachedUser.id }, { onConflict: 'week_number' });
+  return error;
+}
+
+/** Admin-only in practice: uploads/replaces the lecture photo for one week. */
+export async function uploadLecturePhoto(weekNumber, file){
+  if(file.size > MAX_PHOTO_BYTES){
+    return { error: { message: 'Файл больше 15 МБ — сожми фото.' } };
+  }
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `week-${weekNumber}/lecture-photo-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('lessons')
+    .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+  if(uploadError) return { error: uploadError };
+
+  const { error } = await supabase
+    .from('week_lectures')
+    .upsert({ week_number: weekNumber, photo_path: path, updated_by: cachedUser.id }, { onConflict: 'week_number' });
+  if(error){
+    await supabase.storage.from('lessons').remove([path]);
+    return { error };
+  }
+  return { error: null };
+}
+
+/** A short-lived signed URL for displaying a lecture photo. */
+export async function getLecturePhotoUrl(path){
   const { data, error } = await supabase.storage.from('lessons').createSignedUrl(path, 3600);
   if(error) return null;
   return data.signedUrl;

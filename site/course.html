@@ -39,15 +39,12 @@
   .lesson-video-slot video{width:100%;border-radius:10px;display:block}
   .week-task{font-size:.9rem;color:var(--ink-dim);margin-top:18px}
 
-  .quiz-box{margin-top:20px;padding-top:18px;border-top:1px dashed var(--line)}
-  .quiz-box h4{font-size:.9rem;display:flex;align-items:center;gap:8px}
-  .quiz-q{margin-top:16px}
-  .quiz-q p{font-size:.88rem;font-weight:700;margin-bottom:8px}
-  .quiz-opts{display:flex;flex-direction:column;gap:6px}
-  .quiz-opt{display:flex;align-items:center;gap:9px;font-size:.86rem;color:var(--ink-dim);cursor:pointer;padding:2px 0}
-  .quiz-opt input{accent-color:var(--pedal)}
-  .quiz-result{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--stage);border:1px solid var(--line);font-size:.86rem;display:none}
-  .quiz-result.show{display:block}
+  .lecture-box{margin-top:22px;padding-top:20px;border-top:1px dashed var(--line)}
+  .lecture-box h4{font-size:1.02rem;display:flex;align-items:center;gap:8px}
+  .lecture-box p{font-size:.9rem;color:var(--ink-dim);margin-top:12px;max-width:64ch;white-space:pre-line}
+  .lecture-photo{margin-top:16px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--stage)}
+  .lecture-photo img{width:100%;display:block}
+  .lecture-soon{margin-top:14px;padding:16px 18px;border-radius:12px;background:var(--stage);border:1px dashed var(--line-strong);font-size:.86rem;color:var(--ink-faint)}
 
   .report-box{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line)}
   .report-box textarea{margin-bottom:10px}
@@ -106,7 +103,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchLessonVideoMap, getLessonVideoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchLessonVideoMap, getLessonVideoUrl, fetchLectures, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -127,6 +124,13 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
 
   let dash = await fetchDashboard();
   const lessonVideos = await fetchLessonVideoMap();
+  const lectures = await fetchLectures();
+  const lecturePhotoUrls = {};
+  await Promise.all(
+    Object.values(lectures)
+      .filter(l => l.photo_path)
+      .map(async l => { lecturePhotoUrls[l.week_number] = await getLecturePhotoUrl(l.photo_path); }),
+  );
 
   function refreshStatusPanel(){
     const done = CURRICULUM.filter(w => dash.weeks[w.n].reportSubmitted).length;
@@ -181,23 +185,27 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
                 <li class="lesson-video-slot" id="lesson-video-${w.n}-${i}" hidden></li>
               `;}).join('')}
             </ul>
-            <p class="week-task"><b>Задание на видео-отчёт:</b> ${escapeHtml(w.task)}</p>
 
-            <div class="quiz-box" data-quiz="${w.n}">
-              <h4><span>🎸</span> Проверь себя (${w.quiz.length} вопроса)</h4>
-              ${w.quiz.map((item, qi) => `
-                <div class="quiz-q">
-                  <p>${qi + 1}. ${escapeHtml(item.q)}</p>
-                  <div class="quiz-opts">
-                    ${item.options.map((opt, oi) => `
-                      <label class="quiz-opt"><input type="radio" name="q-${w.n}-${qi}" value="${oi}">${escapeHtml(opt)}</label>
-                    `).join('')}
-                  </div>
-                </div>
-              `).join('')}
-              <button type="button" class="btn btn-ghost btn-sm" data-check-quiz="${w.n}" style="margin-top:14px">Проверить ответы</button>
-              <div class="quiz-result" id="quiz-result-${w.n}"></div>
-            </div>
+            ${(() => {
+              const lecture = lectures[w.n];
+              const hasContent = lecture && (lecture.title || lecture.body || lecture.photo_path);
+              if(!hasContent){
+                return `
+                <div class="lecture-box">
+                  <h4><span>📖</span> Лекция</h4>
+                  <div class="lecture-soon">Текст и фото к лекции ещё готовит преподаватель — загляни сюда позже.</div>
+                </div>`;
+              }
+              const photoUrl = lecturePhotoUrls[w.n];
+              return `
+              <div class="lecture-box">
+                <h4><span>📖</span> ${escapeHtml(lecture.title || 'Лекция недели ' + w.n)}</h4>
+                ${(lecture.body || '').split(/\n\s*\n/).filter(p => p.trim()).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('')}
+                ${photoUrl ? `<div class="lecture-photo"><img src="${photoUrl}" alt="${escapeHtml(lecture.title || '')}" loading="lazy"></div>` : ''}
+              </div>`;
+            })()}
+
+            <p class="week-task"><b>Задание на видео-отчёт:</b> ${escapeHtml(w.task)}</p>
 
             ${done ? `
               <div class="report-done">
@@ -225,28 +233,6 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
         const isOpen = body.classList.contains('is-open');
         list.querySelectorAll('.week-body').forEach(b => b.classList.remove('is-open'));
         if(!isOpen) body.classList.add('is-open');
-      });
-    });
-
-    list.querySelectorAll('[data-check-quiz]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const n = parseInt(btn.dataset.checkQuiz, 10);
-        const week = CURRICULUM.find(w => w.n === n);
-        const box = document.querySelector(`[data-quiz="${n}"]`);
-        let correctCount = 0;
-        let answeredAll = true;
-        week.quiz.forEach((item, qi) => {
-          const picked = box.querySelector(`input[name="q-${n}-${qi}"]:checked`);
-          if(!picked){ answeredAll = false; return; }
-          if(parseInt(picked.value, 10) === item.correct) correctCount++;
-        });
-        const result = document.getElementById('quiz-result-' + n);
-        if(!answeredAll){
-          result.textContent = 'Ответь на все вопросы, чтобы узнать результат.';
-        } else {
-          result.textContent = `Результат: ${correctCount} из ${week.quiz.length} правильно.` + (correctCount === week.quiz.length ? ' Отлично, можно сдавать отчёт!' : ' Пересмотри уроки выше и попробуй ещё раз.');
-        }
-        result.classList.add('show');
       });
     });
 

@@ -29,6 +29,19 @@
   .lweek-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
   .lweek-status.is-done{color:var(--copper)}
   .lweek-row input[type="file"]{max-width:220px;font-size:.78rem}
+
+  .lectures-admin{margin-top:28px;display:flex;flex-direction:column;gap:14px}
+  .lec-card{padding:20px 22px}
+  .lec-card h3{font-size:1rem}
+  .lec-field{margin-top:14px}
+  .lec-field label{display:block;font-size:.76rem;color:var(--ink-faint);margin-bottom:6px;font-family:'Space Mono'}
+  .lec-field input[type="text"],.lec-field textarea{width:100%;background:var(--stage);border:1px solid var(--line-strong);border-radius:10px;padding:.7em .9em;font-family:'Manrope';font-size:.88rem;color:var(--ink)}
+  .lec-field textarea{min-height:90px;resize:vertical}
+  .lec-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .lec-photo-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
+  .lec-photo-status.is-done{color:var(--copper)}
+  .lec-row input[type="file"]{max-width:220px;font-size:.78rem}
+  .lec-hint{font-size:.76rem;color:var(--ink-faint);margin-top:8px}
 </style>
 </head>
 <body>
@@ -55,11 +68,18 @@
       <p class="muted" style="margin-top:8px">Загружай видео для каждого урока здесь — ученики увидят кнопку «Смотреть» сразу после загрузки. Загружать и заменять может только преподаватель.</p>
       <div class="lessons-admin" id="lessons-admin"></div>
     </div>
+
+    <div style="margin-top:48px">
+      <span class="eyebrow">Материалы курса</span>
+      <h2 style="font-size:1.4rem;margin-top:8px">Лекции</h2>
+      <p class="muted" style="margin-top:8px">Текст и фото к лекции каждой недели — ученик видит их между видео-уроками и заданием. Пока пусто, ученик видит «преподаватель готовит материал».</p>
+      <div class="lectures-admin" id="lectures-admin"></div>
+    </div>
   </div>
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLessonVideoMap, uploadLessonVideo, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLessonVideoMap, uploadLessonVideo, fetchLectures, saveLecture, uploadLecturePhoto, escapeHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -137,8 +157,67 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLes
     });
   }
 
+  async function renderLectures(){
+    const lectures = await fetchLectures();
+    const el = document.getElementById('lectures-admin');
+    el.innerHTML = CURRICULUM.map(w => {
+      const l = lectures[w.n] || {};
+      const hasPhoto = !!l.photo_path;
+      return `
+      <div class="card lec-card">
+        <h3>W${w.n} · ${escapeHtml(w.title)}</h3>
+        <div class="lec-field">
+          <label for="lec-title-${w.n}">Заголовок лекции</label>
+          <input type="text" id="lec-title-${w.n}" value="${escapeHtml(l.title || '')}" placeholder="Например: ${escapeHtml(w.title)}">
+        </div>
+        <div class="lec-field">
+          <label for="lec-body-${w.n}">Текст лекции</label>
+          <textarea id="lec-body-${w.n}" placeholder="Текст лекции — абзацы через пустую строку">${escapeHtml(l.body || '')}</textarea>
+        </div>
+        <div class="lec-row">
+          <button type="button" class="btn btn-ghost btn-sm" data-save-lecture="${w.n}">Сохранить текст</button>
+          <span class="lec-hint" id="lec-hint-${w.n}"></span>
+        </div>
+        <div class="lec-row">
+          <span class="lec-photo-status ${hasPhoto ? 'is-done' : ''}">${hasPhoto ? 'фото загружено' : 'нет фото'}</span>
+          <input type="file" accept="image/*" id="lec-photo-${w.n}">
+          <button type="button" class="btn btn-ghost btn-sm" data-upload-photo="${w.n}">${hasPhoto ? 'Заменить фото' : 'Загрузить фото'}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.querySelectorAll('[data-save-lecture]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const n = parseInt(btn.dataset.saveLecture, 10);
+        const title = document.getElementById(`lec-title-${n}`).value.trim();
+        const body = document.getElementById(`lec-body-${n}`).value.trim();
+        const hint = document.getElementById(`lec-hint-${n}`);
+        btn.disabled = true; btn.textContent = 'Сохраняем…';
+        const error = await saveLecture(n, { title, body });
+        btn.disabled = false; btn.textContent = 'Сохранить текст';
+        hint.textContent = error ? 'Не получилось: ' + error.message : 'Сохранено ✓';
+      });
+    });
+
+    el.querySelectorAll('[data-upload-photo]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const n = parseInt(btn.dataset.uploadPhoto, 10);
+        const fileInput = document.getElementById(`lec-photo-${n}`);
+        const file = fileInput.files[0];
+        if(!file){ alert('Выбери файл фото.'); return; }
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Загружаем…';
+        const { error } = await uploadLecturePhoto(n, file);
+        btn.disabled = false; btn.textContent = originalLabel;
+        if(error){ alert('Не получилось: ' + error.message); return; }
+        renderLectures();
+      });
+    });
+  }
+
   render();
   renderLessons();
+  renderLectures();
 })();
 </script>
 </body>

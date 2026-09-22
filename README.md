@@ -20,12 +20,13 @@
    ```
 5. **Authentication → Email Templates** — по умолчанию Supabase требует подтверждение почты после регистрации; это нормально, можно отключить в Authentication → Sign In / Providers → Email → «Confirm email», если хочешь мгновенный вход без письма. Со встроенной почтой лимит — пара писем в час; для реального потока учеников подключи свой SMTP в Authentication → Settings → SMTP Settings (например, [Resend](https://resend.com), бесплатно).
 
-> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё пять файлов:
+> **Уже выполнял(а) `schema.sql` раньше?** Выполни по порядку ещё шесть файлов:
 > 1. [`supabase/migrations/002_nickname_and_admin_guard.sql`](supabase/migrations/002_nickname_and_admin_guard.sql) — добавляет никнейм и закрывает уязвимость (ученик мог сам выдать себе admin через devtools).
 > 2. [`supabase/migrations/003_fix_profiles_rls_recursion.sql`](supabase/migrations/003_fix_profiles_rls_recursion.sql) — чинит ошибку `infinite recursion detected in policy for relation "profiles"` (она была в политиках с самого начала, просто не успела проявиться раньше).
 > 3. [`supabase/migrations/004_video_reports_storage.sql`](supabase/migrations/004_video_reports_storage.sql) — переводит отчёты со ссылки на загрузку видео (создаёт приватный Storage bucket `reports`).
 > 4. [`supabase/migrations/005_lesson_videos.sql`](supabase/migrations/005_lesson_videos.sql) — даёт преподавателям (`is_admin = true`) загружать видео к урокам в админ-панели; ученики только смотрят.
 > 5. [`supabase/migrations/006_fix_admin_bootstrap_trigger.sql`](supabase/migrations/006_fix_admin_bootstrap_trigger.sql) — **выполни перед шагом 2 ниже**, иначе команда `update profiles set is_admin = true` из SQL Editor молча ничего не сделает (защитный триггер путал «владелец сайта в SQL Editor» с «ученик из devtools» и откатывал изменение).
+> 6. [`supabase/migrations/007_week_lectures.sql`](supabase/migrations/007_week_lectures.sql) — убирает тесты-квизы, добавляет лекцию (текст + фото) на каждую неделю; текст и фото пишет и загружает преподаватель в админ-панели, ничего не захардкожено заранее.
 
 ### 1a. Google-вход
 
@@ -116,4 +117,5 @@ supabase/
 - то же самое для поля `is_admin` в `profiles` — свой никнейм и имя ученик может менять свободно, но выставить себе `is_admin = true` не даст триггер `profiles_guard`, даже если строка «своя» по RLS;
 - отчёт за неделю N нельзя отправить, если не сдан отчёт за неделю N−1 или (для недель 2–8) курс не оплачен — проверка встроена в саму политику INSERT в базе;
 - видео-отчёты лежат в приватном Storage bucket `reports`, путь к файлу — `<user-id>/week-N-...`; читать и загружать в свою папку может только сам ученик (первый сегмент пути = его `auth.uid()`), весь бакет целиком видят только админы — смотреть видео можно только по короткоживущей подписанной ссылке (`createSignedUrl`, час), а не по постоянной публичной;
-- видео к урокам (bucket `lessons`, таблица `lesson_videos`) — зеркальная схема прав: **загружать, заменять и удалять может только `is_admin = true`**, а смотреть — любой залогиненный ученик; ученик физически не может вызвать upload из devtools, RLS отклонит запрос на уровне базы, а не только скроет кнопку в интерфейсе.
+- видео к урокам (bucket `lessons`, таблица `lesson_videos`) — зеркальная схема прав: **загружать, заменять и удалять может только `is_admin = true`**, а смотреть — любой залогиненный ученик; ученик физически не может вызвать upload из devtools, RLS отклонит запрос на уровне базы, а не только скроет кнопку в интерфейсе;
+- лекции (текст + фото, таблица `week_lectures`, фото — в том же bucket `lessons`) — та же схема: пишет и загружает только преподаватель, ученик только читает. Никакого текста или фото не зашито в код — до первого сохранения в админке ученик видит «преподаватель готовит материал».
