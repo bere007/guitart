@@ -20,15 +20,22 @@
   .r-mini{font-family:'Space Mono';font-size:.72rem;color:var(--ink-faint)}
   .denied{padding:60px 20px;text-align:center}
 
+  .section-intro{margin-top:48px}
+
   .lessons-admin{margin-top:28px;display:flex;flex-direction:column;gap:14px}
   .lweek-card{padding:20px 22px}
   .lweek-card h3{font-size:1rem}
-  .lweek-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-  .lweek-row:first-of-type{border-top:none;margin-top:8px}
-  .lweek-title{flex:1;min-width:180px;font-size:.9rem}
+  .lweek-row{display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+  .lweek-row:first-of-type{border-top:none;margin-top:10px}
+  .lweek-row input[type="text"]{background:var(--stage);border:1px solid var(--line-strong);border-radius:8px;padding:.55em .8em;font-family:'Manrope';font-size:.86rem;color:var(--ink)}
+  .lweek-title-input{flex:1.4;min-width:160px}
+  .lweek-dur-input{flex:.6;min-width:90px}
   .lweek-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
   .lweek-status.is-done{color:var(--copper)}
-  .lweek-row input[type="file"]{max-width:220px;font-size:.78rem}
+  .lweek-add-row{display:flex;gap:10px;flex-wrap:wrap;padding-top:14px;margin-top:4px;border-top:1px dashed var(--line-strong)}
+  .lweek-add-row input[type="text"]{background:var(--stage);border:1px solid var(--line-strong);border-radius:8px;padding:.55em .8em;font-family:'Manrope';font-size:.86rem;color:var(--ink)}
+  .lweek-add-row .ladd-title{flex:1.4;min-width:160px}
+  .lweek-add-row .ladd-dur{flex:.6;min-width:90px}
 
   .lectures-admin{margin-top:28px;display:flex;flex-direction:column;gap:14px}
   .lec-card{padding:20px 22px}
@@ -40,8 +47,7 @@
   .lec-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
   .lec-photo-status{font-family:'Space Mono';font-size:.7rem;color:var(--ink-faint);white-space:nowrap}
   .lec-photo-status.is-done{color:var(--copper)}
-  .lec-row input[type="file"]{max-width:220px;font-size:.78rem}
-  .lec-hint{font-size:.76rem;color:var(--ink-faint);margin-top:8px}
+  .lec-hint{font-size:.76rem;color:var(--ink-faint)}
 </style>
 </head>
 <body>
@@ -62,24 +68,24 @@
 
     <div class="card roster" id="roster"></div>
 
-    <div style="margin-top:48px">
+    <div class="section-intro">
       <span class="eyebrow">Материалы курса</span>
-      <h2 style="font-size:1.4rem;margin-top:8px">Видео к урокам</h2>
-      <p class="muted" style="margin-top:8px">Загружай видео для каждого урока здесь — ученики увидят кнопку «Смотреть» сразу после загрузки. Загружать и заменять может только преподаватель.</p>
+      <h2 style="font-size:1.4rem;margin-top:8px">Уроки</h2>
+      <p class="muted" style="margin-top:8px">Переименовывай, удаляй и добавляй уроки в любую неделю, загружай или заменяй видео к каждому. Ученики видят только сохранённые изменения.</p>
       <div class="lessons-admin" id="lessons-admin"></div>
     </div>
 
-    <div style="margin-top:48px">
+    <div class="section-intro">
       <span class="eyebrow">Материалы курса</span>
-      <h2 style="font-size:1.4rem;margin-top:8px">Лекции</h2>
-      <p class="muted" style="margin-top:8px">Текст и фото к лекции каждой недели — ученик видит их между видео-уроками и заданием. Пока пусто, ученик видит «преподаватель готовит материал».</p>
+      <h2 style="font-size:1.4rem;margin-top:8px">Лекция и задание</h2>
+      <p class="muted" style="margin-top:8px">Текст и фото лекции, а также задание на видео-отчёт — ученик видит их между уроками и загрузкой отчёта. Пока пусто, ученик видит «преподаватель готовит материал».</p>
       <div class="lectures-admin" id="lectures-admin"></div>
     </div>
   </div>
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLessonVideoMap, uploadLessonVideo, fetchLectures, saveLecture, uploadLecturePhoto, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchWeekLessons, createLesson, updateLesson, deleteLesson, uploadLessonVideo, removeLessonVideo, fetchLectures, saveLecture, uploadLecturePhoto, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -123,34 +129,100 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLes
   }
 
   async function renderLessons(){
-    const videoMap = await fetchLessonVideoMap();
+    const lessons = await fetchWeekLessons();
     const el = document.getElementById('lessons-admin');
-    el.innerHTML = CURRICULUM.map(w => `
+    el.innerHTML = CURRICULUM.map(w => {
+      const list = lessons[w.n] || [];
+      return `
       <div class="card lweek-card">
         <h3>W${w.n} · ${escapeHtml(w.title)}</h3>
-        ${w.lessons.map((l, i) => {
-          const has = !!videoMap[`${w.n}-${i}`];
-          return `
-          <div class="lweek-row">
-            <span class="lweek-title">${i + 1}. ${escapeHtml(l.title)}</span>
-            <span class="lweek-status ${has ? 'is-done' : ''}">${has ? 'видео загружено' : 'нет видео'}</span>
-            <input type="file" accept="video/*" id="lfile-${w.n}-${i}">
-            <button type="button" class="btn btn-ghost btn-sm" data-upload-lesson="${w.n}-${i}">${has ? 'Заменить' : 'Загрузить'}</button>
-          </div>`;
-        }).join('')}
-      </div>
-    `).join('');
+        ${list.map(l => `
+          <div class="lweek-row" data-row="${l.id}">
+            <input type="text" class="lweek-title-input" id="ltitle-${l.id}" value="${escapeHtml(l.title)}" placeholder="Название урока">
+            <input type="text" class="lweek-dur-input" id="ldur-${l.id}" value="${escapeHtml(l.duration || '')}" placeholder="Длительность">
+            <button type="button" class="btn btn-ghost btn-sm" data-save-lesson="${l.id}">Сохранить</button>
+            <span class="lweek-status ${l.video_path ? 'is-done' : ''}">${l.video_path ? 'видео загружено' : 'нет видео'}</span>
+            ${filePickerHtml(`lfile-${l.id}`, 'video/*', l.video_path ? 'Заменить видео' : 'Загрузить видео')}
+            ${l.video_path ? `<button type="button" class="btn btn-ghost btn-sm" data-upload-lesson="${l.id}" data-week="${w.n}">Сохранить видео</button><button type="button" class="btn btn-ghost btn-sm" data-remove-video="${l.id}">Убрать видео</button>`
+              : `<button type="button" class="btn btn-ghost btn-sm" data-upload-lesson="${l.id}" data-week="${w.n}">Сохранить видео</button>`}
+            <button type="button" class="btn btn-ghost btn-sm" data-delete-lesson="${l.id}">Удалить урок</button>
+          </div>
+        `).join('') || '<p class="faint" style="padding:14px 0 0">Уроков пока нет.</p>'}
+        <div class="lweek-add-row">
+          <input type="text" class="ladd-title" id="ladd-title-${w.n}" placeholder="Название нового урока">
+          <input type="text" class="ladd-dur" id="ladd-dur-${w.n}" placeholder="Длительность, напр. 6 мин">
+          <button type="button" class="btn btn-pedal btn-sm" data-add-lesson="${w.n}">+ Добавить урок</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.querySelectorAll('[data-save-lesson]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.saveLesson;
+        const title = document.getElementById(`ltitle-${id}`).value.trim();
+        const duration = document.getElementById(`ldur-${id}`).value.trim();
+        if(!title){ alert('Название урока не может быть пустым.'); return; }
+        btn.disabled = true; btn.textContent = 'Сохраняем…';
+        const error = await updateLesson(id, { title, duration });
+        btn.disabled = false; btn.textContent = 'Сохранить';
+        if(error){ alert('Не получилось: ' + error.message); return; }
+        renderLessons();
+      });
+    });
 
     el.querySelectorAll('[data-upload-lesson]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const [weekNumber, lessonIndex] = btn.dataset.uploadLesson.split('-').map(Number);
-        const fileInput = document.getElementById(`lfile-${weekNumber}-${lessonIndex}`);
+        const id = btn.dataset.uploadLesson;
+        const weekNumber = parseInt(btn.dataset.week, 10);
+        const fileInput = document.getElementById(`lfile-${id}`);
         const file = fileInput.files[0];
         if(!file){ alert('Выбери видеофайл.'); return; }
+        const current = (lessons[weekNumber] || []).find(l => String(l.id) === String(id));
         const originalLabel = btn.textContent;
         btn.disabled = true; btn.textContent = 'Загружаем…';
-        const { error } = await uploadLessonVideo(weekNumber, lessonIndex, file);
+        const { error } = await uploadLessonVideo(id, weekNumber, file, current?.video_path);
         btn.disabled = false; btn.textContent = originalLabel;
+        if(error){ alert('Не получилось: ' + error.message); return; }
+        renderLessons();
+      });
+    });
+
+    el.querySelectorAll('[data-remove-video]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.removeVideo;
+        const weekNumber = CURRICULUM.find(w => (lessons[w.n] || []).some(l => String(l.id) === String(id)))?.n;
+        const current = (lessons[weekNumber] || []).find(l => String(l.id) === String(id));
+        if(!confirm('Убрать видео у этого урока?')) return;
+        btn.disabled = true;
+        const error = await removeLessonVideo(id, current?.video_path);
+        if(error){ alert('Не получилось: ' + error.message); btn.disabled = false; return; }
+        renderLessons();
+      });
+    });
+
+    el.querySelectorAll('[data-delete-lesson]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.deleteLesson;
+        if(!confirm('Удалить урок целиком? Это действие необратимо.')) return;
+        const weekNumber = CURRICULUM.find(w => (lessons[w.n] || []).some(l => String(l.id) === String(id)))?.n;
+        const current = (lessons[weekNumber] || []).find(l => String(l.id) === String(id));
+        btn.disabled = true; btn.textContent = 'Удаляем…';
+        const error = await deleteLesson(id, current?.video_path);
+        if(error){ alert('Не получилось: ' + error.message); btn.disabled = false; btn.textContent = 'Удалить урок'; return; }
+        renderLessons();
+      });
+    });
+
+    el.querySelectorAll('[data-add-lesson]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const weekNumber = parseInt(btn.dataset.addLesson, 10);
+        const title = document.getElementById(`ladd-title-${weekNumber}`).value.trim();
+        const duration = document.getElementById(`ladd-dur-${weekNumber}`).value.trim();
+        if(!title){ alert('Впиши название урока.'); return; }
+        const position = (lessons[weekNumber] || []).length;
+        btn.disabled = true; btn.textContent = 'Добавляем…';
+        const error = await createLesson(weekNumber, title, duration, position);
+        btn.disabled = false; btn.textContent = '+ Добавить урок';
         if(error){ alert('Не получилось: ' + error.message); return; }
         renderLessons();
       });
@@ -174,14 +246,18 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLes
           <label for="lec-body-${w.n}">Текст лекции</label>
           <textarea id="lec-body-${w.n}" placeholder="Текст лекции — абзацы через пустую строку">${escapeHtml(l.body || '')}</textarea>
         </div>
+        <div class="lec-field">
+          <label for="lec-task-${w.n}">Задание на видео-отчёт</label>
+          <textarea id="lec-task-${w.n}" placeholder="Что именно снять на видео для отчёта за эту неделю">${escapeHtml(l.task || '')}</textarea>
+        </div>
         <div class="lec-row">
-          <button type="button" class="btn btn-ghost btn-sm" data-save-lecture="${w.n}">Сохранить текст</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-save-lecture="${w.n}">Сохранить текст и задание</button>
           <span class="lec-hint" id="lec-hint-${w.n}"></span>
         </div>
         <div class="lec-row">
           <span class="lec-photo-status ${hasPhoto ? 'is-done' : ''}">${hasPhoto ? 'фото загружено' : 'нет фото'}</span>
-          <input type="file" accept="image/*" id="lec-photo-${w.n}">
-          <button type="button" class="btn btn-ghost btn-sm" data-upload-photo="${w.n}">${hasPhoto ? 'Заменить фото' : 'Загрузить фото'}</button>
+          ${filePickerHtml(`lec-photo-${w.n}`, 'image/*', hasPhoto ? 'Заменить фото' : 'Загрузить фото')}
+          <button type="button" class="btn btn-ghost btn-sm" data-upload-photo="${w.n}">Сохранить фото</button>
         </div>
       </div>`;
     }).join('');
@@ -191,10 +267,11 @@ import { requireAuth, currentProfile, fetchAdminRoster, markExamPassed, fetchLes
         const n = parseInt(btn.dataset.saveLecture, 10);
         const title = document.getElementById(`lec-title-${n}`).value.trim();
         const body = document.getElementById(`lec-body-${n}`).value.trim();
+        const task = document.getElementById(`lec-task-${n}`).value.trim();
         const hint = document.getElementById(`lec-hint-${n}`);
         btn.disabled = true; btn.textContent = 'Сохраняем…';
-        const error = await saveLecture(n, { title, body });
-        btn.disabled = false; btn.textContent = 'Сохранить текст';
+        const error = await saveLecture(n, { title, body, task });
+        btn.disabled = false; btn.textContent = 'Сохранить текст и задание';
         hint.textContent = error ? 'Не получилось: ' + error.message : 'Сохранено ✓';
       });
     });

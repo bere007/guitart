@@ -6,79 +6,18 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_URL } from './config.js';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Structural week titles only -- lessons (title/duration/video) and the
+// per-week task now live in the database and are fully managed by teachers
+// from admin.html: add, rename, delete, upload/replace video.
 export const CURRICULUM = [
-  {
-    n: 1, title: 'Посадка, аккорды Em и G',
-    lessons: [
-      { title: 'Посадка и постановка рук', duration: '7 мин' },
-      { title: 'Аккорд Em: разбор постановки', duration: '5 мин' },
-      { title: 'Аккорд G: три варианта аппликатуры', duration: '6 мин' },
-    ],
-    task: 'Сними видео: чисто сыграй переход Em → G, 8 тактов подряд.',
-  },
-  {
-    n: 2, title: 'Бой шестёркой и аккорд C',
-    lessons: [
-      { title: 'Аккорд C: постановка и частые ошибки', duration: '6 мин' },
-      { title: 'Бой шестёркой: считаем вслух', duration: '8 мин' },
-      { title: 'Связка Em–C–G без остановки', duration: '7 мин' },
-    ],
-    task: 'Пришли видео с боем «шестёрка» на связке Em–C–G, в темпе 80 BPM.',
-  },
-  {
-    n: 3, title: 'Аккорд D и первый бой-перебор',
-    lessons: [
-      { title: 'Аккорд D: постановка «треугольником»', duration: '5 мин' },
-      { title: 'Перебор: чередование баса и мелодии', duration: '7 мин' },
-      { title: 'Куплет песни на Em–C–G–D', duration: '8 мин' },
-    ],
-    task: 'Сыграй куплет любой песни на Em–C–G–D без остановки.',
-  },
-  {
-    n: 4, title: 'Барре F и зажимы',
-    lessons: [
-      { title: 'Что такое барре и зачем оно нужно', duration: '6 мин' },
-      { title: 'Мини-барре F на 4 струнах', duration: '7 мин' },
-      { title: 'Полный барре F', duration: '8 мин' },
-    ],
-    task: 'Видео с чистым звучанием барре F, 4 переключения без глушения струн.',
-  },
-  {
-    n: 5, title: 'Перебор восьмёркой',
-    lessons: [
-      { title: 'Ритмический рисунок восьмёрки', duration: '6 мин' },
-      { title: 'Восьмёрка на Am–F–C–G', duration: '8 мин' },
-      { title: 'Игра с метрономом', duration: '6 мин' },
-    ],
-    task: 'Запиши перебор восьмёркой на прогрессии Am–F–C–G, метроном обязателен.',
-  },
-  {
-    n: 6, title: 'Соло-техника: хаммер-он и пул-офф',
-    lessons: [
-      { title: 'Hammer-on: удар пальцем по ладу', duration: '6 мин' },
-      { title: 'Pull-off: съём пальца со струны', duration: '6 мин' },
-      { title: 'Комбинации hammer-on/pull-off во фразе', duration: '7 мин' },
-    ],
-    task: 'Сыграй тренировочную фразу с hammer-on/pull-off на 5-м ладу.',
-  },
-  {
-    n: 7, title: 'Разбор трека целиком',
-    lessons: [
-      { title: 'Структура трека: куплет / припев / бридж', duration: '8 мин' },
-      { title: 'Разбор куплета и припева', duration: '10 мин' },
-      { title: 'Разбор бриджа и перехода', duration: '7 мин' },
-    ],
-    task: 'Пришли полный разбор выбранного трека — куплет, припев, бридж.',
-  },
-  {
-    n: 8, title: 'Подготовка к экзамену',
-    lessons: [
-      { title: 'Повторение аккордов и техник курса', duration: '10 мин' },
-      { title: 'Работа над сложными переходами', duration: '8 мин' },
-      { title: 'Как проходит экзамен по видеозвонку', duration: '5 мин' },
-    ],
-    task: 'Финальный прогон трека целиком, без остановок и подсказок.',
-  },
+  { n: 1, title: 'Посадка, аккорды Em и G' },
+  { n: 2, title: 'Бой шестёркой и аккорд C' },
+  { n: 3, title: 'Аккорд D и первый бой-перебор' },
+  { n: 4, title: 'Барре F и зажимы' },
+  { n: 5, title: 'Перебор восьмёркой' },
+  { n: 6, title: 'Соло-техника: хаммер-он и пул-офф' },
+  { n: 7, title: 'Разбор трека целиком' },
+  { n: 8, title: 'Подготовка к экзамену' },
 ];
 
 let cachedUser = null;
@@ -251,21 +190,40 @@ export async function getReportVideoUrl(path){
 const MAX_LESSON_BYTES = 300 * 1024 * 1024; // matches the "lessons" bucket's file_size_limit
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 
-/** { "week-lessonIndex": video_path } for every lesson that has a video -- any signed-in user can read this. */
-export async function fetchLessonVideoMap(){
-  const { data } = await supabase.from('lesson_videos').select('week_number, lesson_index, video_path');
+/** { weekNumber: [{id, title, duration, video_path}, ...] }, ordered -- any signed-in user can read this. */
+export async function fetchWeekLessons(){
+  const { data } = await supabase.from('week_lessons').select('id, week_number, position, title, duration, video_path').order('position');
   const map = {};
-  (data || []).forEach(row => { map[`${row.week_number}-${row.lesson_index}`] = row.video_path; });
+  (data || []).forEach(row => { (map[row.week_number] ||= []).push(row); });
   return map;
 }
 
-/** Admin-only in practice (RLS rejects anyone else): uploads/replaces the video for one lesson. */
-export async function uploadLessonVideo(weekNumber, lessonIndex, file){
+/** Admin-only in practice: adds a new lesson row to the end of a week's list. */
+export async function createLesson(weekNumber, title, duration, position){
+  const { error } = await supabase.from('week_lessons').insert({ week_number: weekNumber, title, duration, position });
+  return error;
+}
+
+/** Admin-only in practice: renames a lesson / changes its duration text. */
+export async function updateLesson(id, { title, duration }){
+  const { error } = await supabase.from('week_lessons').update({ title, duration, updated_at: new Date().toISOString() }).eq('id', id);
+  return error;
+}
+
+/** Admin-only in practice: deletes a lesson (and its video file, if any). */
+export async function deleteLesson(id, videoPath){
+  const { error } = await supabase.from('week_lessons').delete().eq('id', id);
+  if(!error && videoPath) await supabase.storage.from('lessons').remove([videoPath]);
+  return error;
+}
+
+/** Admin-only in practice: uploads/replaces the video for one lesson row. */
+export async function uploadLessonVideo(id, weekNumber, file, oldVideoPath){
   if(file.size > MAX_LESSON_BYTES){
     return { error: { message: 'Файл больше 300 МБ — сожми видео или укороти его.' } };
   }
   const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
-  const path = `week-${weekNumber}/lesson-${lessonIndex}-${Date.now()}.${ext}`;
+  const path = `week-${weekNumber}/lesson-${id}-${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from('lessons')
@@ -273,16 +231,22 @@ export async function uploadLessonVideo(weekNumber, lessonIndex, file){
   if(uploadError) return { error: uploadError };
 
   const { error } = await supabase
-    .from('lesson_videos')
-    .upsert(
-      { week_number: weekNumber, lesson_index: lessonIndex, video_path: path, uploaded_by: cachedUser.id },
-      { onConflict: 'week_number,lesson_index' },
-    );
+    .from('week_lessons')
+    .update({ video_path: path, updated_at: new Date().toISOString() })
+    .eq('id', id);
   if(error){
     await supabase.storage.from('lessons').remove([path]);
     return { error };
   }
+  if(oldVideoPath) await supabase.storage.from('lessons').remove([oldVideoPath]);
   return { error: null };
+}
+
+/** Admin-only in practice: removes a lesson's video without deleting the lesson itself. */
+export async function removeLessonVideo(id, videoPath){
+  const { error } = await supabase.from('week_lessons').update({ video_path: null }).eq('id', id);
+  if(!error && videoPath) await supabase.storage.from('lessons').remove([videoPath]);
+  return error;
 }
 
 /** A short-lived signed URL for playing back a lesson video. */
@@ -292,19 +256,19 @@ export async function getLessonVideoUrl(path){
   return data.signedUrl;
 }
 
-/** { weekNumber: {title, body, photo_path} } for every week that has lecture content -- any signed-in user can read this. */
+/** { weekNumber: {title, body, photo_path, task} } for every week that has content -- any signed-in user can read this. */
 export async function fetchLectures(){
-  const { data } = await supabase.from('week_lectures').select('week_number, title, body, photo_path');
+  const { data } = await supabase.from('week_lectures').select('week_number, title, body, photo_path, task');
   const map = {};
   (data || []).forEach(row => { map[row.week_number] = row; });
   return map;
 }
 
-/** Admin-only in practice: writes/replaces the lecture text for one week (photo is uploaded separately). */
-export async function saveLecture(weekNumber, { title, body }){
+/** Admin-only in practice: writes/replaces the lecture text + task for one week (photo is uploaded separately). */
+export async function saveLecture(weekNumber, { title, body, task }){
   const { error } = await supabase
     .from('week_lectures')
-    .upsert({ week_number: weekNumber, title, body, updated_by: cachedUser.id }, { onConflict: 'week_number' });
+    .upsert({ week_number: weekNumber, title, body, task, updated_by: cachedUser.id }, { onConflict: 'week_number' });
   return error;
 }
 
@@ -398,6 +362,15 @@ export function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
+/** Markup for a styled file input (see .file-picker in style.css) -- native <input type=file> hidden, a real button triggers it. */
+export function filePickerHtml(id, accept, label){
+  return `<div class="file-picker">
+    <input type="file" class="file-input" id="${id}" accept="${accept}">
+    <label for="${id}" class="btn btn-ghost btn-sm file-picker-btn">${escapeHtml(label)}</label>
+    <span class="file-picker-name" id="${id}-name">Файл не выбран</span>
+  </div>`;
+}
+
 function pickSvg(){
   return `<svg class="pick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
@@ -468,3 +441,14 @@ export async function renderNav(){
 }
 
 document.addEventListener('DOMContentLoaded', () => { renderNav(); });
+
+// Styled file inputs: a real <input type="file"> is visually hidden inside
+// .file-picker and triggered via its <label>; this just keeps the visible
+// filename text in sync, delegated so it works for inputs added later by
+// dynamically rendered admin UI too.
+document.addEventListener('change', (e) => {
+  if(!e.target.matches('.file-input')) return;
+  const wrap = e.target.closest('.file-picker');
+  const nameEl = wrap?.querySelector('.file-picker-name');
+  if(nameEl) nameEl.textContent = e.target.files[0]?.name || 'Файл не выбран';
+});

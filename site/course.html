@@ -103,7 +103,7 @@
 </main>
 
 <script type="module">
-import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchLessonVideoMap, getLessonVideoUrl, fetchLectures, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, CURRICULUM } from './app.js';
+import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportVideo, getReportVideoUrl, fetchWeekLessons, getLessonVideoUrl, fetchLectures, getLecturePhotoUrl, courseProgressPercent, startCheckout, updateNickname, escapeHtml, filePickerHtml, CURRICULUM } from './app.js';
 
 (async () => {
   const user = await requireAuth();
@@ -123,7 +123,7 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
   });
 
   let dash = await fetchDashboard();
-  const lessonVideos = await fetchLessonVideoMap();
+  const weekLessons = await fetchWeekLessons();
   const lectures = await fetchLectures();
   const lecturePhotoUrls = {};
   await Promise.all(
@@ -171,19 +171,17 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
         <div class="week-body" id="body-${w.n}">
           ${unlocked ? `
             <ul class="lesson-list">
-              ${w.lessons.map((l, i) => {
-                const hasVideo = !!lessonVideos[`${w.n}-${i}`];
-                return `
+              ${(weekLessons[w.n] || []).map((l, i) => `
                 <li>
                   <span class="li-n mono">${i + 1}</span>
                   <span class="li-title">${escapeHtml(l.title)}</span>
-                  <span class="li-dur mono">${escapeHtml(l.duration)}</span>
-                  ${hasVideo
-                    ? `<button type="button" class="btn btn-ghost btn-sm" data-watch-lesson="${w.n}-${i}">Смотреть</button>`
+                  <span class="li-dur mono">${escapeHtml(l.duration || '')}</span>
+                  ${l.video_path
+                    ? `<button type="button" class="btn btn-ghost btn-sm" data-watch-lesson="${l.id}">Смотреть</button>`
                     : `<span class="li-soon mono">видео скоро</span>`}
                 </li>
-                <li class="lesson-video-slot" id="lesson-video-${w.n}-${i}" hidden></li>
-              `;}).join('')}
+                <li class="lesson-video-slot" id="lesson-video-${l.id}" hidden></li>
+              `).join('') || '<li class="faint">Уроки для этой недели ещё готовятся.</li>'}
             </ul>
 
             ${(() => {
@@ -205,7 +203,7 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
               </div>`;
             })()}
 
-            <p class="week-task"><b>Задание на видео-отчёт:</b> ${escapeHtml(w.task)}</p>
+            <p class="week-task"><b>Задание на видео-отчёт:</b> ${lectures[w.n]?.task ? escapeHtml(lectures[w.n].task) : '<span class="faint">преподаватель ещё не добавил задание</span>'}</p>
 
             ${done ? `
               <div class="report-done">
@@ -215,10 +213,10 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
               </div>
             ` : `
               <div class="report-box">
-                <label for="report-${w.n}">Видео-отчёт (MP4, MOV, WebM — до 200 МБ)</label>
-                <input type="file" id="report-${w.n}" accept="video/*">
+                <label>Видео-отчёт (MP4, MOV, WebM — до 200 МБ)</label>
+                ${filePickerHtml('report-' + w.n, 'video/*', 'Выбрать видео')}
                 <p class="error-text" id="report-error-${w.n}">Не получилось сдать отчёт.</p>
-                <button type="button" class="btn btn-pedal" data-submit="${w.n}">Загрузить и сдать отчёт за неделю ${w.n}</button>
+                <button type="button" class="btn btn-pedal" data-submit="${w.n}" style="margin-top:14px">Загрузить и сдать отчёт за неделю ${w.n}</button>
               </div>
             `}
           ` : `<p class="faint" style="padding:16px 0 4px">${lockReason(w.n)}</p>`}
@@ -274,12 +272,15 @@ import { requireAuth, currentProfile, displayName, fetchDashboard, uploadReportV
       });
     });
 
+    const lessonById = {};
+    Object.values(weekLessons).flat().forEach(l => { lessonById[l.id] = l; });
+
     list.querySelectorAll('[data-watch-lesson]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const key = btn.dataset.watchLesson;
-        const holder = document.getElementById('lesson-video-' + key);
+        const id = btn.dataset.watchLesson;
+        const holder = document.getElementById('lesson-video-' + id);
         btn.disabled = true; btn.textContent = 'Открываем…';
-        const url = await getLessonVideoUrl(lessonVideos[key]);
+        const url = await getLessonVideoUrl(lessonById[id]?.video_path);
         btn.disabled = false; btn.textContent = 'Смотреть';
         if(!url){ holder.textContent = 'Не получилось загрузить видео.'; holder.hidden = false; return; }
         holder.innerHTML = `<video src="${url}" controls style="width:100%;border-radius:10px;margin-top:12px"></video>`;
