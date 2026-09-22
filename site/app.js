@@ -410,6 +410,24 @@ function pickSvg(){
   </svg>`;
 }
 
+const THEME_KEY = 'guitart-theme';
+
+/** 'light' | 'dark', resolved from an explicit user choice or (failing that) the OS preference. */
+function currentTheme(){
+  const stamped = document.documentElement.getAttribute('data-theme');
+  if(stamped === 'light' || stamped === 'dark') return stamped;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  try{ localStorage.setItem(THEME_KEY, theme); }catch(e){}
+}
+
+function themeToggleIcon(theme){
+  return theme === 'dark' ? '☀️' : '🌙';
+}
+
 export async function renderNav(){
   const mount = document.getElementById('site-nav');
   if(!mount) return;
@@ -441,17 +459,32 @@ export async function renderNav(){
     : `<a href="auth.html">Войти</a>
        <a href="auth.html?mode=register">Начать бесплатно</a>`;
 
+  const theme = currentTheme();
+
   mount.innerHTML = `
     <div class="wrap row">
       <a class="logo" href="index.html">${pickSvg()}GuitArt</a>
       <nav class="nav-links">${linksHtml}</nav>
-      <div class="nav-actions">${actionsHtml}</div>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Переключить тему">${themeToggleIcon(theme)}</button>
+        ${actionsHtml}
+      </div>
       <button class="nav-burger" id="nav-burger" type="button" aria-label="Меню" aria-expanded="false">☰</button>
     </div>
-    <nav class="nav-mobile" id="nav-mobile">${linksHtml}${mobileActionsHtml}</nav>`;
+    <nav class="nav-mobile" id="nav-mobile">
+      ${linksHtml}
+      <button type="button" id="theme-toggle-mobile">${theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</button>
+      ${mobileActionsHtml}
+    </nav>`;
 
   [document.getElementById('nav-logout'), document.getElementById('nav-logout-mobile')]
     .forEach(btn => btn && btn.addEventListener('click', signOutUser));
+
+  [document.getElementById('theme-toggle'), document.getElementById('theme-toggle-mobile')]
+    .forEach(btn => btn && btn.addEventListener('click', () => {
+      applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+      renderNav();
+    }));
 
   const burgerBtn = document.getElementById('nav-burger');
   const mobilePanel = document.getElementById('nav-mobile');
